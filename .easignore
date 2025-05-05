@@ -1,0 +1,23 @@
+# === Ignore everything in the macOS Library folder ===
+Library/**
+library/**
+
+# === Specifically ignore problem subfolders too ===
+Library/Application Support/**
+Library/Logs/**
+Library/Developer/**
+Library/Containers/**
+Library/Caches/**
+Library/Preferences/**
+Library/Saved Application State/**
+Library/Safari/**
+Library/Google/**
+
+# === Common clutter ===
+.DS_Store
+*.log
+npm-debug.log*
+
+# === Android/iOS native folders if you're not editing them ===
+android/
+ios/
