@@ -5,8 +5,8 @@ import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
 
 // Import your screens
-import Home from './pages/Home';
-import Profile from './pages/Profile';
+import Home from './app/Home';
+import Profile from './app/Profile';
 
 export type TabParamList = {
   Home: undefined;
