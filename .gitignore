@@ -42,3 +42,8 @@ Library/
 
 echo "Library/" >> .gitignore
 git rm -r --cached Library/ || echo "Library not tracked — good!"
+
+# Expo
+.expo
+dist/
+web-build/

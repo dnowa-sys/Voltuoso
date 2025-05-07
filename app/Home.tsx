@@ -1,30 +1,57 @@
+// File: app/Home.tsx
+// Description: This file contains the Home component which displays a map, a search bar, and buttons for scanning and taking a ride.
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 const Home = () => {
   const [location, setLocation] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [stations, setStations] = useState<any[]>([]);
 
   useEffect(() => {
-    (async () => {
+    const fetchLocation = async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         setErrorMsg('Permission to access location was denied');
+        setLoading(false);
         return;
       }
 
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
-    })();
+      let loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc);
+      fetchChargingStations(loc.coords.latitude, loc.coords.longitude);
+      setLoading(false);
+    };
+
+    fetchLocation();
   }, []);
 
-  let text = 'Waiting..';
-  if (errorMsg) {
-    text = errorMsg;
-  } else if (location) {
-    text = 'Location fetched successfully!';
+  const fetchChargingStations = async (latitude: number, longitude: number) => {
+    const apiKey = 'AIzaSyBOJhTPdIODkiAEdPxnd3Po0tQu5OGxy-4';
+    const radius = 5000; // 5 km radius
+    const type = 'electric_vehicle_charging_station';
+
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${apiKey}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      setStations(data.results);
+    } catch {
+      setErrorMsg('Failed to fetch charging stations');
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#2ECC71" />
+        <Text>Fetching your location...</Text>
+      </View>
+    );
   }
 
   return (
@@ -43,8 +70,13 @@ const Home = () => {
         />
       </View>
 
+      {/* Status Message */}
+      <Text style={{ textAlign: 'center', marginBottom: 10 }}>
+        {errorMsg || 'Location fetched successfully!'}
+      </Text>
+
       {/* Map Display */}
-      {location && (
+      {location && !loading && (
         <MapView
           style={styles.map}
           initialRegion={{
@@ -62,6 +94,17 @@ const Home = () => {
             title="Your Location"
             description="This is where you are currently."
           />
+          {stations.map((station, index) => (
+            <Marker
+              key={index}
+              coordinate={{
+                latitude: station.geometry.location.lat,
+                longitude: station.geometry.location.lng,
+              }}
+              title={station.name}
+              description={station.vicinity}
+            />
+          ))}
         </MapView>
       )}
 
@@ -132,6 +175,12 @@ const styles = StyleSheet.create({
   },
   button: {
     width: '40%',
+  },
+  centered: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
   },
 });
 

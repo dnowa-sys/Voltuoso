@@ -26,6 +26,9 @@
       "eas": {
         "projectId": "c66927be-5943-4db9-9661-ebf03f44ff53"
       }
+    },
+    "android": {
+      "package": "com.dnowa.Voltuoso"
     }
   },
   "android": {
@@ -33,7 +36,10 @@
       "foregroundImage": "./assets/images/adaptive-icon.png",
       "backgroundColor": "#ffffff"
     },
-    "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"],
+    "permissions": [
+      "ACCESS_FINE_LOCATION",
+      "ACCESS_COARSE_LOCATION"
+    ],
     "edgeToEdgeEnabled": true
   },
   "web": {
