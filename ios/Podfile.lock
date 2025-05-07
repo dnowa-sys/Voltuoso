@@ -291,6 +291,8 @@ PODS:
     - ExpoModulesCore
   - ExpoLinking (7.1.4):
     - ExpoModulesCore
+  - ExpoLocation (18.1.4):
+    - ExpoModulesCore
   - ExpoModulesCore (2.3.12):
     - DoubleConversion
     - glog
@@ -2380,6 +2382,7 @@ DEPENDENCIES:
   - ExpoImage (from `../node_modules/expo-image/ios`)
   - ExpoKeepAwake (from `../node_modules/expo-keep-awake/ios`)
   - ExpoLinking (from `../node_modules/expo-linking/ios`)
+  - ExpoLocation (from `../node_modules/expo-location/ios`)
   - ExpoModulesCore (from `../node_modules/expo-modules-core`)
   - ExpoSplashScreen (from `../node_modules/expo-splash-screen/ios`)
   - ExpoSymbols (from `../node_modules/expo-symbols/ios`)
@@ -2516,6 +2519,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/expo-keep-awake/ios"
   ExpoLinking:
     :path: "../node_modules/expo-linking/ios"
+  ExpoLocation:
+    :path: "../node_modules/expo-location/ios"
   ExpoModulesCore:
     :path: "../node_modules/expo-modules-core"
   ExpoSplashScreen:
@@ -2704,6 +2709,7 @@ SPEC CHECKSUMS:
   ExpoImage: e7738bebc58cee17e93fa161f2444f9c343996f5
   ExpoKeepAwake: bf0811570c8da182bfb879169437d4de298376e7
   ExpoLinking: b6a0320bf46ae36807d3dc27b4a1d4474505f99c
+  ExpoLocation: 073779bf6ed3928dfe42a8614dc6ee18197572d1
   ExpoModulesCore: 3ac17421302df62928fc99c133cf25bdbcf0b004
   ExpoSplashScreen: f524572afd81522e40850eaa7163e2ae99cce783
   ExpoSymbols: 5324de61341b396965a1cd3d2c738227b13d6a60

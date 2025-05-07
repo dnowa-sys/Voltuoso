@@ -1,13 +1,12 @@
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { Button, StyleSheet, Text, TextInput, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 
 const Home = () => {
-  const [location, setLocation] = useState<any>(null); // To store the location data
-  const [errorMsg, setErrorMsg] = useState<string | null>(null); // To store any error messages
+  const [location, setLocation] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
-  // Request location permissions and get the user's current location
   useEffect(() => {
     (async () => {
       let { status } = await Location.requestForegroundPermissionsAsync();
@@ -21,30 +20,40 @@ const Home = () => {
     })();
   }, []);
 
-  // Error handling or display current location
   let text = 'Waiting..';
   if (errorMsg) {
-    text = errorMsg; // Show error if permission is denied
+    text = errorMsg;
   } else if (location) {
     text = 'Location fetched successfully!';
   }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>{text}</Text>
+      {/* Top Header */}
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Hi Daniel,</Text>
+        <Text style={styles.subHeaderText}>Take a ride</Text>
+      </View>
 
-      {/* Display Map when location is available */}
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Get directions"
+        />
+      </View>
+
+      {/* Map Display */}
       {location && (
         <MapView
           style={styles.map}
           initialRegion={{
-            latitude: location.coords.latitude, // User's latitude
-            longitude: location.coords.longitude, // User's longitude
+            latitude: location.coords.latitude,
+            longitude: location.coords.longitude,
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           }}
         >
-          {/* Marker for user's current location */}
           <Marker
             coordinate={{
               latitude: location.coords.latitude,
@@ -53,20 +62,26 @@ const Home = () => {
             title="Your Location"
             description="This is where you are currently."
           />
-          {/* Marker for charging station (1900 Wyoming Ave NW, Washington, DC 20009) */}
-          <Marker
-            coordinate={{
-              latitude: 38.9272, // Latitude for the given charging station
-              longitude: -77.0579, // Longitude for the given charging station
-            }}
-            title="Charging Station"
-            description="This is the default charging station."
-          />
         </MapView>
       )}
 
-      {/* Button to navigate to the profile screen */}
-      <Button title="Go to Profile" onPress={() => {}} />
+      {/* Bottom Buttons */}
+      <View style={styles.buttonContainer}>
+        <View style={styles.button}>
+          <Button
+            title="Scan"
+            onPress={() => {}}
+            color="#F1C40F" // Lemon Yellow
+          />
+        </View>
+        <View style={styles.button}>
+          <Button
+            title="Take a ride"
+            onPress={() => {}}
+            color="#2ECC71" // Emerald Green
+          />
+        </View>
+      </View>
     </View>
   );
 };
@@ -74,20 +89,49 @@ const Home = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
     backgroundColor: '#FAFAFA', // Snow White background
     padding: 20,
   },
   header: {
+    paddingTop: 40,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  headerText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#2ECC71', // Emerald Green header
+    color: '#2ECC71', // Emerald Green
+  },
+  subHeaderText: {
+    fontSize: 20,
+    color: '#2C3E50', // Slate Gray
+  },
+  searchContainer: {
+    marginTop: 20,
     marginBottom: 20,
+  },
+  searchInput: {
+    height: 50,
+    borderColor: '#BDC3C7',
+    borderWidth: 1,
+    borderRadius: 25,
+    paddingLeft: 15,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF', // White background for input
   },
   map: {
     width: '100%',
     height: '60%',
+    marginBottom: 20,
+    borderRadius: 10, // Rounded corners for the map
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 30,
+  },
+  button: {
+    width: '40%',
   },
 });
 
