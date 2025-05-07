@@ -8,6 +8,7 @@ const ProfilePage: React.FC = () => {
       <Text>Last Name: Doe</Text>
       <Text>Car: Tesla Model 3</Text>
       <Text>Username: johndoe</Text>
+      {/* You can add the actual functionality later for these buttons */}
       <Button title="Edit Profile" onPress={() => {}} />
       <Button title="Delete Account" onPress={() => {}} />
       <Button title="Payment Details" onPress={() => {}} />

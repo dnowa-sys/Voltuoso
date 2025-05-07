@@ -27,7 +27,14 @@ const App: React.FC = () => {
 
   return (
     <NavigationContainer>
-      <Tab.Navigator>
+      <Tab.Navigator
+        initialRouteName="Home" // Set a default screen
+        screenOptions={{
+          tabBarActiveTintColor: '#2ECC71', // Customize the active tab color
+          tabBarInactiveTintColor: '#BDC3C7', // Customize the inactive tab color
+          tabBarStyle: { backgroundColor: '#FAFAFA' }, // Customize the tab bar background color
+        }}
+      >
         <Tab.Screen name="Home" component={HomePage} />
         <Tab.Screen name="Profile" component={ProfilePage} />
       </Tab.Navigator>
