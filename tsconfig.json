@@ -17,9 +17,7 @@
   },
   "include": [
     "src/**/*",
-    "App.tsx",
-    ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "App.tsx"
   ],
   "extends": "expo/tsconfig.base"
 }
