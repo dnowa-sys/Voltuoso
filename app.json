@@ -13,7 +13,8 @@
       "bundleIdentifier": "com.dnowa.Voltuoso",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
-      }
+      },
+      "jsEngine": "hermes"
     },
     "android": {
       "adaptiveIcon": {
