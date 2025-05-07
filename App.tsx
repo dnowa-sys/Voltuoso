@@ -4,7 +4,10 @@ import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
 
-// Export the TabParamList type so it can be imported elsewhere
+// Import your screens
+import Home from './pages/Home';
+import Profile from './pages/Profile';
+
 export type TabParamList = {
   Home: undefined;
   Profile: undefined;
@@ -21,7 +24,7 @@ const App = () => {
         setTimeout(async () => {
           setIsReady(true);
           await SplashScreen.hideAsync();
-        }, 3000);
+        }, 3000); // 3-second delay
       } catch (error) {
         console.error('Error during splash screen initialization:', error);
       }
@@ -31,7 +34,7 @@ const App = () => {
   }, []);
 
   if (!isReady) {
-    return null;
+    return null; // Ensure nothing is returned until splash screen hides
   }
 
   return (
