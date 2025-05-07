@@ -1,4 +1,5 @@
 // Home.tsx
+import { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
