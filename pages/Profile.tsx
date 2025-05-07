@@ -1,17 +1,37 @@
 import React from 'react';
-import { Button, StyleSheet, Text, View } from 'react-native';
+import { Alert, Button, StyleSheet, Text, View } from 'react-native';
 
-const ProfilePage: React.FC = () => {
+const Profile: React.FC = () => {
+  const handleEditProfile = () => {
+    Alert.alert("Edit Profile", "This functionality is coming soon!");
+  };
+
+  const handleDeleteAccount = () => {
+    Alert.alert("Delete Account", "This functionality is coming soon!");
+  };
+
+  const handlePaymentDetails = () => {
+    Alert.alert("Payment Details", "This functionality is coming soon!");
+  };
+
+  // Placeholder profile data
+  const profileData = {
+    firstName: 'John',
+    lastName: 'Doe',
+    car: 'Tesla Model 3',
+    username: 'johndoe123',
+  };
+
   return (
     <View style={styles.container}>
-      <Text>First Name: John</Text>
-      <Text>Last Name: Doe</Text>
-      <Text>Car: Tesla Model 3</Text>
-      <Text>Username: johndoe</Text>
-      {/* You can add the actual functionality later for these buttons */}
-      <Button title="Edit Profile" onPress={() => {}} />
-      <Button title="Delete Account" onPress={() => {}} />
-      <Button title="Payment Details" onPress={() => {}} />
+      <Text style={styles.profileText}>First Name: {profileData.firstName}</Text>
+      <Text style={styles.profileText}>Last Name: {profileData.lastName}</Text>
+      <Text style={styles.profileText}>Car: {profileData.car}</Text>
+      <Text style={styles.profileText}>Username: {profileData.username}</Text>
+
+      <Button title="Edit Profile" onPress={handleEditProfile} />
+      <Button title="Delete Account" onPress={handleDeleteAccount} />
+      <Button title="Payment Details" onPress={handlePaymentDetails} />
     </View>
   );
 };
@@ -21,7 +41,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  profileText: {
+    fontSize: 18,
+    marginBottom: 10,
   },
 });
 
-export default ProfilePage;
+export default Profile;

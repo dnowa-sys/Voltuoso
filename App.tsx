@@ -1,42 +1,51 @@
+// App.tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-import HomePage from './pages/Home'; // Your Home screen component
-import ProfilePage from './pages/Profile'; // Profile screen component
 
-// Prevent the splash screen from auto-hiding
-SplashScreen.preventAutoHideAsync();
+// Export the TabParamList type so it can be imported elsewhere
+export type TabParamList = {
+  Home: undefined;
+  Profile: undefined;
+};
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
 
-const App: React.FC = () => {
-  const [isReady, setIsReady] = useState<boolean>(false);
+const App = () => {
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // Simulate a network request or initialization before showing the app
-    setTimeout(() => {
-      setIsReady(true);
-      SplashScreen.hideAsync();
-    }, 3000);  // Display the splash screen for 3 seconds
+    const prepare = async () => {
+      try {
+        setTimeout(async () => {
+          setIsReady(true);
+          await SplashScreen.hideAsync();
+        }, 3000);
+      } catch (error) {
+        console.error('Error during splash screen initialization:', error);
+      }
+    };
+
+    prepare();
   }, []);
 
   if (!isReady) {
-    return null; // Return nothing while the splash screen is visible
+    return null;
   }
 
   return (
     <NavigationContainer>
       <Tab.Navigator
-        initialRouteName="Home" // Set a default screen
+        initialRouteName="Home"
         screenOptions={{
-          tabBarActiveTintColor: '#2ECC71', // Customize the active tab color
-          tabBarInactiveTintColor: '#BDC3C7', // Customize the inactive tab color
-          tabBarStyle: { backgroundColor: '#FAFAFA' }, // Customize the tab bar background color
+          tabBarActiveTintColor: '#2ECC71',
+          tabBarInactiveTintColor: '#BDC3C7',
+          tabBarStyle: { backgroundColor: '#FAFAFA' },
         }}
       >
-        <Tab.Screen name="Home" component={HomePage} />
-        <Tab.Screen name="Profile" component={ProfilePage} />
+        <Tab.Screen name="Home" component={Home} />
+        <Tab.Screen name="Profile" component={Profile} />
       </Tab.Navigator>
     </NavigationContainer>
   );

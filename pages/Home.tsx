@@ -1,15 +1,19 @@
-import { useNavigation } from '@react-navigation/native'; // Import the navigation hook
+// Home.tsx
+import { useNavigation } from '@react-navigation/native';
 import React from 'react';
 import { Button, StyleSheet, Text, View } from 'react-native';
 
-const HomePage: React.FC = () => {
-  // Access the navigation prop from the hook
-  const navigation = useNavigation();
+// Import the TabParamList type from App.tsx
+import { TabParamList } from '../App'; // Corrected import
+
+type HomeScreenNavigationProp = BottomTabNavigationProp<TabParamList, 'Home'>;
+
+const Home: React.FC = () => {
+  const navigation = useNavigation<HomeScreenNavigationProp>();
 
   return (
     <View style={styles.container}>
-      <Text>Welcome to Voltuoso</Text>
-      {/* On button press, navigate to the Profile screen */}
+      <Text style={styles.welcomeText}>Welcome to Voltuoso</Text>
       <Button title="Go to Profile" onPress={() => navigation.navigate('Profile')} />
     </View>
   );
@@ -21,6 +25,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  welcomeText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    marginBottom: 20,
+  },
 });
 
-export default HomePage;
+export default Home;
