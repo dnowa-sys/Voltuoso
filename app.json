@@ -7,7 +7,6 @@
       "android"
     ],
     "version": "1.0.0",
-    "sdkVersion": "48.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "voltuoso",
@@ -20,11 +19,6 @@
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We need your location to show nearby charging stations.",
         "NSLocationAlwaysUsageDescription": "We need your location for continuous background location tracking to show nearby stations even when the app is in the background."
-      },
-      "builds": {
-        "ios": {
-          "jsEngine": "hermes"  
-        }
       }
     },
     "android": {
@@ -44,140 +38,6 @@
       "favicon": "./assets/images/favicon.png",
       "bundler": "metro",
       "output": "static"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff"
-        }
-      ]
-    ],
-    "expo-location": {
-      "always": true,
-      "whenInUse": true
-    },
-    "expo-updates": {
-      "fallbackToCacheTimeout": 0
-    },
-    "expo-dev-client": {
-      "bundleIdentifier": "com.dnowa.Voltuoso.dev"
-    },
-    "expo-notifications": {
-      "icon": "./assets/images/notification-icon.png",
-      "color": "#ffffff",
-      "androidMode": "default",
-      "androidCollapsedTitle": "#{unread_notifications} new interactions"
-    },
-    "expo-splash-screen": {
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "expo-modules-autolinking": {
-      "preserveNativeModules": true
-    },
-    "expo-application": {
-      "android": {
-        "versionCode": 1
-      }
-    },
-    "expo-asset": {
-      "assetPlugins": [
-        "expo-asset/tools/hashAssetFiles"
-      ]
-    },
-    "expo-dev-launcher": {
-      "useCustomDevClient": true
-    },
-    "expo-constants": {
-      "manifest": {
-        "extra": {
-          "eas": {
-            "projectId": "c66927be-5943-4db9-9661-ebf03f44ff53"
-          }
-        }
-      }
-    },
-    "expo-keep-awake": {
-      "enabled": true
-    },
-    "expo-contacts": {
-      "ios": {
-        "usageDescription": "This app uses your contacts to allow you to share your profile with friends."
-      },
-      "android": {
-        "permissions": [
-          "READ_CONTACTS",
-          "WRITE_CONTACTS"
-        ]
-      }
-    },
-    "expo-image-picker": {
-      "ios": {
-        "infoPlist": {
-          "NSPhotoLibraryAddUsageDescription": "This app uses your photo library to allow you to upload images."
-        }
-      },
-      "android": {
-        "permissions": [
-          "READ_EXTERNAL_STORAGE",
-          "WRITE_EXTERNAL_STORAGE"
-        ]
-      }
-    },
-    "expo-image": {
-      "sourceExts": [
-        "png",
-        "jpg",
-        "jpeg",
-        "gif",
-        "webp",
-        "heic"
-      ]
-    },
-    "expo-keep-awake": {
-      "enabled": true
-    },
-    "expo-contacts": {
-      "ios": {
-        "usageDescription": "This app uses your contacts to allow you to share your profile with friends."
-      },
-      "android": {
-        "permissions": [
-          "READ_CONTACTS",
-          "WRITE_CONTACTS"
-        ]
-      }
-    },
-    "expo-image-picker": {
-      "ios": {
-        "infoPlist": {
-          "NSPhotoLibraryAddUsageDescription": "This app uses your photo library to allow you to upload images."
-        }
-      },
-      "android": {
-        "permissions": [
-          "READ_EXTERNAL_STORAGE",
-          "WRITE_EXTERNAL_STORAGE"
-        ]
-      }
-    },
-    "expo-router": {
-      "appDirectory": "app",
-      "entryFile": "index.tsx",
-      "sourceExts": [
-        "tsx",
-        "ts",
-        "jsx",
-        "js"
-      ],
-      "assetExts": [
-        "db"
-      ]
     },
     "extra": {
       "eas": {
