@@ -1,50 +1,43 @@
 # ios/Podfile
 
+platform :ios, '15.1'  # Expo SDK 53+ minimum
+
+# 1) Expo autolinking
 require File.join(
   File.dirname(`node --print "require.resolve('expo/package.json')"`),
   "scripts/autolinking"
 )
+
+# 2) React Native autolinking
 require File.join(
   File.dirname(`node --print "require.resolve('react-native/package.json')"`),
   "scripts/react_native_pods"
 )
+
+# (Removed the @react-native-community/cli-platform-ios/native_modules require)
 
 require 'json'
 podfile_properties = JSON.parse(
   File.read(File.join(__dir__, 'Podfile.properties.json'))
 ) rescue {}
 
-# Minimum iOS version
-platform :ios, podfile_properties['ios.deploymentTarget'] || '15.1'
-
-# Stable UUIDs for pods
-install! 'cocoapods', :deterministic_uuids => false
-
-# Prepare RN + Expo autolinking
+install! 'cocoapods', deterministic_uuids: false
 prepare_react_native_project!
 
 target 'Voltuoso' do
-  use_expo_modules!                            # Expo modules autolinking
-  config = use_native_modules!                 # React Native modules autolinking
+  use_expo_modules!                    # Expo Modules (expo-dev-menu, expo-modules-core, etc.)
+  config = use_native_modules!         # Other RN community modules
 
   use_react_native!(
-    :path => config[:reactNativePath],
-    :hermes_enabled => true,
-    :app_path => "#{Pod::Config.instance.installation_root}/.."
+    path:           config[:reactNativePath],
+    hermes_enabled: podfile_properties['expo.jsEngine'] != 'jsc',
+    fabric_enabled: podfile_properties['expo.jsEngine'] != 'jsc'
   )
 
   post_install do |installer|
-    # Standard RN post-install adjustments
-    react_native_post_install(installer, config[:reactNativePath])
-    # NOTE: Removed __apply_Xcode_12_5_M1_post_install_workaround, not needed with current RN
-
-    # Workaround for conflicting DEFINES_MODULE settings
-    installer.pods_project.targets.each do |target|
-      # Apply to all pods or list specific ones causing conflicts
-      target.build_configurations.each do |build_cfg|
-        build_cfg.build_settings['DEFINES_MODULE'] = 'YES'
-      end
-    end
+    # Standard React Native + Expo fixes
+    react_native_post_install(installer)
+    # (No DEFINES_MODULE tweak here)
   end
 
   post_integrate do |installer|
