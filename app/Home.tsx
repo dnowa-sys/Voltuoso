@@ -1,11 +1,15 @@
 // File: app/Home.tsx
+import { config } from 'dotenv';
 import * as Location from 'expo-location';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
+import 'react-native-get-random-values'; // Necessary for some packages like `uuid`
 import MapView, { Marker } from 'react-native-maps';
+config(); // This loads the .env file
 
 const Home = () => {
   const [location, setLocation] = useState<any>(null);
+  const [stations, setStations] = useState<any[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -17,16 +21,34 @@ const Home = () => {
         setLoading(false);
         return;
       }
-
-      let loc = await Location.getCurrentPositionAsync({});
-      setLocation(loc);
-      setLoading(false);
+      try {
+        const loc = await Location.getCurrentPositionAsync({});
+        setLocation(loc);
+        await fetchChargingStations(loc.coords.latitude, loc.coords.longitude);
+      } catch (e) {
+        setErrorMsg('Error fetching location');
+      } finally {
+        setLoading(false);
+      }
     };
-
     fetchLocation();
   }, []);
 
-  // Show loading indicator while fetching location
+  const fetchChargingStations = async (latitude: number, longitude: number) => {
+    const apiKey = process.env.GOOGLE_CLOUD_API_KEY;
+    const radius = 5000; // meters
+    const type = 'electric_vehicle_charging_station';
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${apiKey}`;
+
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      if (data.results) setStations(data.results);
+    } catch {
+      setErrorMsg('Failed to fetch charging stations');
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.centered}>
@@ -38,8 +60,8 @@ const Home = () => {
 
   return (
     <View style={styles.container}>
-      {/* Map Display */}
-      {location && !loading && (
+      {/* Full‑screen Map */}
+      {location && (
         <MapView
           style={styles.map}
           initialRegion={{
@@ -48,27 +70,42 @@ const Home = () => {
             latitudeDelta: 0.0922,
             longitudeDelta: 0.0421,
           }}
+          showsUserLocation
         >
+          {/* User Location */}
           <Marker
             coordinate={{
               latitude: location.coords.latitude,
               longitude: location.coords.longitude,
             }}
             title="Your Location"
-            description="This is where you are currently."
+            description="You are here"
           />
+          {/* Nearby Charging Stations */}
+          {stations.map((station, index) => (
+            <Marker
+              key={`station-${index}`}
+              coordinate={{
+                latitude: station.geometry.location.lat,
+                longitude: station.geometry.location.lng,
+              }}
+              title={station.name}
+              description={station.vicinity}
+            />
+          ))}
         </MapView>
       )}
 
-      {/* Search Bar Overlaying the Map */}
+      {/* Search Bar Overlay */}
       <View style={styles.searchBarContainer}>
         <TextInput
           style={styles.searchInput}
           placeholder="Get directions"
+          placeholderTextColor="#666"
         />
       </View>
 
-      {/* Bottom Tab Menu (Placeholder for now) */}
+      {/* Bottom Tab Placeholder */}
       <View style={styles.bottomTab}>
         <Text style={styles.bottomTabText}>See More</Text>
       </View>
@@ -79,7 +116,7 @@ const Home = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA', // Snow White background
+    backgroundColor: '#FAFAFA',
   },
   map: {
     width: '100%',
@@ -90,27 +127,27 @@ const styles = StyleSheet.create({
     top: 40,
     width: '100%',
     paddingHorizontal: 20,
-    zIndex: 1, // Ensure search bar stays above map
+    zIndex: 1,
   },
   searchInput: {
     height: 50,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 25,
+    paddingHorizontal: 15,
+    fontSize: 16,
     borderColor: '#BDC3C7',
     borderWidth: 1,
-    borderRadius: 25,
-    paddingLeft: 15,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
   },
   bottomTab: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: '#2C3E50', // Slate Gray
-    padding: 15,
+    backgroundColor: '#2C3E50',
+    paddingVertical: 15,
     alignItems: 'center',
-    borderTopLeftRadius: 20, // Rounded corners on the top
-    borderTopRightRadius: 20, // Rounded corners on the top
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
   },
   bottomTabText: {
     fontSize: 16,

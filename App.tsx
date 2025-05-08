@@ -1,12 +1,14 @@
 // App.tsx
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { NavigationContainer } from '@react-navigation/native';
+import { config } from 'dotenv'; // This loads the .env file
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useEffect, useState } from 'react';
-
+import 'react-native-get-random-values'; // Necessary for some packages like `uuid`
 // Import your screens
 import Home from './app/Home';
 import Profile from './app/Profile';
+config();
 
 export type TabParamList = {
   Home: undefined;
