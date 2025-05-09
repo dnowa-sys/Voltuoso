@@ -1,11 +1,10 @@
 // File: app/Home.tsx
-import { config } from 'dotenv';
+import Constants from 'expo-constants';
 import * as Location from 'expo-location';
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, Text, TextInput, View } from 'react-native';
 import 'react-native-get-random-values'; // Necessary for some packages like `uuid`
 import MapView, { Marker } from 'react-native-maps';
-config(); // This loads the .env file
 
 const Home = () => {
   const [location, setLocation] = useState<any>(null);
@@ -38,6 +37,8 @@ const Home = () => {
     const apiKey = process.env.GOOGLE_CLOUD_API_KEY;
     const radius = 5000; // meters
     const type = 'electric_vehicle_charging_station';
+    const { API_URL } = Constants.expoConfig?.extra!;
+    console.log('API is at', API_URL);
     const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${latitude},${longitude}&radius=${radius}&type=${type}&key=${apiKey}`;
 
     try {
