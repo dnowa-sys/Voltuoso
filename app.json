@@ -2,16 +2,26 @@
   "expo": {
     "name": "Voltuoso",
     "slug": "Voltuoso",
-    "platforms": [
-      "ios",
-      "android"
-    ],
+    "scheme": "voltuoso",
     "version": "1.0.0",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "voltuoso",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "entryPoint": "expo-router/entry",
+
+  
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+
+    "assetBundlePatterns": ["**/*"],
+    "plugins": [
+      "expo-router"
+    ],
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.dnowa.Voltuoso",
@@ -21,32 +31,29 @@
         "NSLocationAlwaysUsageDescription": "We need your location for continuous background location tracking to show nearby stations even when the app is in the background."
       }
     },
+
     "android": {
       "package": "com.dnowa.Voltuoso",
       "versionCode": 1,
-      "edgeToEdgeEnabled": true,
-      "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION"
-      ]
+      ],
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      }
     },
+
     "web": {
-      "favicon": "./assets/images/favicon.png",
-      "bundler": "metro",
-      "output": "static"
+      "favicon": "./assets/images/favicon.png"
     },
+
     "extra": {
       "eas": {
         "projectId": "c66927be-5943-4db9-9661-ebf03f44ff53"
       },
       "apiUrl": "https://api.voltuoso.com"
-    },
-    "experiments": {
-      "typedRoutes": true
     }
   }
 }

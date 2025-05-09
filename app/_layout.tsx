@@ -1,14 +1,16 @@
-// app/_layout.tsx
-import { Stack } from 'expo-router';
-import React from 'react';
+// File: app/_layout.tsx
+import { SplashScreen, Stack } from "expo-router";
+import { useEffect } from "react";
+
+SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  return (
-    <Stack>
-      <Stack.Screen name="Home" />
-      <Stack.Screen name="Settings" />
-      <Stack.Screen name="Profile" />
-      {/* Add other screens as needed */}
-    </Stack>
-  );
+  useEffect(() => {
+    async function prepare() {
+      await SplashScreen.hideAsync();
+    }
+    prepare();
+  }, []);
+
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
