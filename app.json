@@ -1,39 +1,54 @@
 {
   "expo": {
     "name": "Voltuoso",
-    "slug": "Voltuoso",
+    "slug": "voltuoso",
     "scheme": "voltuoso",
     "version": "1.0.0",
-    "sdkVersion": "53.0.0",
+    "sdkVersion": "48.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "userInterfaceStyle": "automatic",
     "entryPoint": "expo-router/entry",
-
-  
+    "plugins": [
+      "expo-router",
+      [
+        "expo-maps",
+        {
+          "requestLocationPermission": true,
+          "locationPermission": {
+            "android": {
+              "title": "Location Permission",
+              "message": "We need your location to show nearby charging stations.",
+              "buttonPositive": "OK",
+              "buttonNegative": "Cancel"
+            },
+            "ios": {
+              "title": "Location Permission",
+              "message": "We need your location to show nearby charging stations.",
+              "buttonPositive": "OK",
+              "buttonNegative": "Cancel"
+            }
+          }
+        }
+      ]
+    ],
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "assetBundlePatterns": ["**/*"],
-    "plugins": [
-      "expo-router"
-    ],
-
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.dnowa.Voltuoso",
+      "bundleIdentifier": "com.dnowa.voltuoso",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We need your location to show nearby charging stations.",
-        "NSLocationAlwaysUsageDescription": "We need your location for continuous background location tracking to show nearby stations even when the app is in the background."
+        "NSLocationAlwaysUsageDescription": "We need your location for continuous background location tracking even when the app is in the background."
       }
     },
-
     "android": {
-      "package": "com.dnowa.Voltuoso",
+      "package": "com.dnowa.voltuoso",
       "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
@@ -42,18 +57,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "GOOGLE_CLOUD_API_KEY>"
+        }
       }
     },
-
     "web": {
       "favicon": "./assets/images/favicon.png"
     },
-
     "extra": {
+      "GOOGLE_CLOUD_API_KEY": "GOOGLE_CLOUD_API_KEY",
+      "apiUrl": "https://api.voltuoso.com",
       "eas": {
-        "projectId": "c66927be-5943-4db9-9661-ebf03f44ff53"
-      },
-      "apiUrl": "https://api.voltuoso.com"
+        "projectId": "51a1a865-99b4-4a64-b7b7-3726f0306ce3"
+      }
     }
   }
 }

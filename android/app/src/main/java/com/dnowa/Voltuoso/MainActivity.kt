@@ -1,4 +1,4 @@
-package com.dnowa.Voltuoso
+package com.dnowa.voltuoso
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build
