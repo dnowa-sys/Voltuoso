@@ -10,6 +10,17 @@
     "userInterfaceStyle": "automatic",
     "entryPoint": "expo-router/entry",
     "plugins": [
+       "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
       "expo-router",
       [
         "expo-maps",
@@ -18,13 +29,13 @@
           "locationPermission": {
             "android": {
               "title": "Location Permission",
-              "message": "We need your location to show nearby charging stations.",
+              "message": "Allow Voltuoso to access your location to show nearby charging stations.",
               "buttonPositive": "OK",
               "buttonNegative": "Cancel"
             },
             "ios": {
               "title": "Location Permission",
-              "message": "We need your location to show nearby charging stations.",
+              "message": "Allow Voltuoso to access your location to show nearby charging stations.",
               "buttonPositive": "OK",
               "buttonNegative": "Cancel"
             }
@@ -32,6 +43,7 @@
         }
       ]
     ],
+
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -40,6 +52,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
+      "googleServicesFile": "./app/services/GoogleService-Info.plist",
       "bundleIdentifier": "com.dnowa.voltuoso",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
@@ -48,6 +61,7 @@
       }
     },
     "android": {
+      "googleServicesFile": "./app/services/google-services.json",
       "package": "com.dnowa.voltuoso",
       "versionCode": 1,
       "permissions": [
