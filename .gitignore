@@ -48,3 +48,7 @@ git rm -r --cached Library/ || echo "Library not tracked — good!"
 .expo
 dist/
 web-build/
+
+# Google Services and Firebase
+google-services.json
+GoogleService-Info.plist
