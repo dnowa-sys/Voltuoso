@@ -4,21 +4,23 @@
     "slug": "voltuoso",
     "scheme": "voltuoso",
     "version": "1.0.0",
-    "sdkVersion": "48.0.0",
+    "sdkVersion": "53.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
+    "newArchEnabled": true,
     "userInterfaceStyle": "automatic",
     "entryPoint": "expo-router/entry",
     "plugins": [
-       "@react-native-firebase/app",
+      "expo-dev-client",
+      "@react-native-firebase/app",
       "@react-native-firebase/auth",
-      "@react-native-firebase/crashlytics",
       [
         "expo-build-properties",
         {
           "ios": {
             "useFrameworks": "static"
-          }
+          },
+          "newArchEnabled": true
         }
       ],
       "expo-router",
@@ -74,7 +76,7 @@
       },
       "config": {
         "googleMaps": {
-          "apiKey": "GOOGLE_CLOUD_API_KEY>"
+          "apiKey": "GOOGLE_CLOUD_API_KEY"
         }
       }
     },

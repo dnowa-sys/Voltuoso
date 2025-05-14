@@ -1,10 +1,56 @@
-rootProject.name = 'Voltuoso'
+// android/settings.gradle
 
-apply from: new File(["node", "--print", "require.resolve('expo/package.json')"].execute(null, rootDir).text.trim(), "../scripts/autolinking.gradle");
+// 1) Must be first
+pluginManagement {
+  repositories {
+    gradlePluginPortal()
+    google()
+    mavenCentral()
+  }
+  resolutionStrategy {
+    eachPlugin {
+      if (requested.id.id == "com.facebook.react.settings") {
+        def rnVersion = providers.exec {
+          workingDir rootDir
+          commandLine "node", "--print", "require('react-native/package.json').version"
+        }.standardOutput.asText.get().trim()
+        useModule("com.facebook.react:react-native-gradle-plugin:$rnVersion")
+      }
+      if (requested.id.id == "org.jetbrains.kotlin.android") {
+        useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21")
+      }
+      // expo-autolinking-settings will come from the composite build below
+    }
+  }
+}
+
+// 2) Immediately after pluginManagement you get exactly one plugins {} block.
+//    Nothing else may come before this.
+plugins {
+  id("com.facebook.react.settings")
+  id("expo-autolinking-settings")
+}
+
+// 3) Now you can declare your composite builds:
+includeBuild("../node_modules/@react-native/gradle-plugin")
+includeBuild("../node_modules/expo-modules-autolinking/android/expo-gradle-plugin")
+
+// 4) And your dependency resolution:
+dependencyResolutionManagement {
+  repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+  repositories {
+    google()
+    mavenCentral()
+    maven { url "https://www.jitpack.io" }
+  }
+}
+
+// 5) Finally your project name, includes, and Expo wiring:
+rootProject.name = "Voltuoso"
+include(":app")
+
+// Expo’s autolinking script:
+apply from: file("$rootDir/../node_modules/expo/scripts/autolinking.gradle")
+
 useExpoModules()
-
-apply from: new File(["node", "--print", "require.resolve('@react-native-community/cli-platform-android/package.json')"].execute(null, rootDir).text.trim(), "../native_modules.gradle");
-applyNativeModulesSettingsGradle(settings)
-
-include ':app'
-includeBuild(new File(["node", "--print", "require.resolve('react-native-gradle-plugin/package.json')"].execute(null, rootDir).text.trim()).getParentFile())
+expoAutolinking.useExpoVersionCatalog()
