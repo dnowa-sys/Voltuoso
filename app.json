@@ -43,15 +43,17 @@
             }
           }
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
-
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true,
       "googleServicesFile": "./app/services/GoogleService-Info.plist",
@@ -68,7 +70,9 @@
       "versionCode": 1,
       "permissions": [
         "ACCESS_FINE_LOCATION",
-        "ACCESS_COARSE_LOCATION"
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
@@ -84,11 +88,19 @@
       "favicon": "./assets/images/favicon.png"
     },
     "extra": {
-      "GOOGLE_CLOUD_API_KEY": "GOOGLE_CLOUD_API_KEY",
       "apiUrl": "https://api.voltuoso.com",
+      "firebase": {
+        "apiKey": "FIREBASE_API_KEY",
+        "authDomain": "FIREBASE_AUTH_DOMAIN",
+        "projectId": "FIREBASE_PROJECT_ID",
+        "storageBucket": "FIREBASE_STORAGE_BUCKET",
+        "messagingSenderId": "FIREBASE_MESSAGING_SENDER_ID",
+        "appId": "FIREBASE_APP_ID"
+      },
       "eas": {
         "projectId": "51a1a865-99b4-4a64-b7b7-3726f0306ce3"
       }
-    }
+    },
+    "owner": "dnowa"
   }
 }

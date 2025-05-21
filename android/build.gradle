@@ -1,65 +1,37 @@
-// android/build.gradle
-// Top‑level build file where you can add configuration options common to all sub‑projects/modules.
+// Top-level build file where you can add configuration options common to all sub-projects/modules.
 
 buildscript {
-  ext {
-    compileSdkVersion = 34
-    targetSdkVersion  = 34
-    minSdkVersion     = 21
-    kotlinVersion     = "2.0.21"
-  }
-
-  // Pull in the exact RN plugin version from your JS package.json
-  def rnPluginVersion = new groovy.json.JsonSlurper()
-    .parse(file("${rootDir.parent}/node_modules/react-native/package.json"))
-    .version
-
   repositories {
     google()
     mavenCentral()
-    // Removed custom maven block for @react-native/gradle-plugin as it's not needed and causes errors
   }
-
   dependencies {
-    // Android Gradle plugin
-    classpath "com.android.tools.build:gradle:7.4.2"
-    // Kotlin Gradle plugin
-    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
-    // Google services (Firebase, etc.)
-    classpath "com.google.gms:google-services:4.4.1"
-    // React‑Native Gradle plugin—pulled from your local node_modules via composite build
-    classpath "com.facebook.react:react-native-gradle-plugin:${rnPluginVersion}"
+    classpath('com.android.tools.build:gradle')
+    classpath('com.facebook.react:react-native-gradle-plugin')
+    classpath('org.jetbrains.kotlin:kotlin-gradle-plugin')
   }
 }
 
-// Where React‑Native ships its AAR
 def reactNativeAndroidDir = new File(
   providers.exec {
-    workingDir(rootDir.parentFile)
-    commandLine "node", "--print", "require.resolve('react-native/package.json')"
+    workingDir(rootDir)
+    commandLine("node", "--print", "require.resolve('react-native/package.json')")
   }.standardOutput.asText.get().trim(),
   "../android"
 )
 
-// expo-camera’s AAR in its auto‑generated maven folder
-def expoCameraMavenPath = new File(
-  providers.exec {
-    workingDir rootDir
-    commandLine "node", "--print", "require.resolve('expo-camera/package.json')"
-  }.standardOutput.asText.get().trim(),
-  "../android/maven"
-).absolutePath
-
 allprojects {
   repositories {
-    // RN AARs over npm
-    maven { url reactNativeAndroidDir }
-
-    // expo‑camera AAR
-    maven { url expoCameraMavenPath }
+    maven {
+      // All of React Native (JS, Obj-C sources, Android binaries) is installed from npm
+      url(reactNativeAndroidDir)
+    }
 
     google()
     mavenCentral()
     maven { url 'https://www.jitpack.io' }
   }
 }
+
+apply plugin: "expo-root-project"
+apply plugin: "com.facebook.react.rootproject"

@@ -1,3 +1,3 @@
 
 // app/index.tsx
-export { default } from './Home';
+export { default } from './screens/Home';

@@ -1,10 +1,18 @@
 {
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "target": "esnext",
     "lib": [
       "esnext",
       "dom"
     ],
+    "baseUrl": ".", 
+   "paths": {
+      "firebase/auth": [
+        "node_modules/@firebase/auth/dist/index.rn.d.ts"
+      ]
+    }
+  },
     "allowJs": true,
     "skipLibCheck": true,
     "jsx": "react-native",
@@ -13,11 +21,6 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    "resolveJsonModule": true
-  },
-  "include": [
-    "src/**/*",
-    "App.tsx"
-  ],
-  "extends": "expo/tsconfig.base"
+    "resolveJsonModule": true,
+   "include": ["**/*.ts","**/*.tsx","firebase-auth-react-native.d.ts","firebase.tsx"],
 }

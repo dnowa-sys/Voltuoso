@@ -200,3 +200,4 @@ const styles = StyleSheet.create({
   error: { marginTop: 8, color: 'red' },
   errorOverlay: { position: 'absolute', top: 10, alignSelf: 'center', backgroundColor: 'rgba(255,0,0,0.7)', color: '#FFF', padding: 5, borderRadius: 5, zIndex: 3 },
 });
+
