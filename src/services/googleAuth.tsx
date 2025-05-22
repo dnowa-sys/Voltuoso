@@ -1,7 +1,7 @@
 // services/googleAuth.ts
 import * as Google from "expo-auth-session/providers/google";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
-import { auth } from "../firebase";
+import { auth } from "./firebase";
 
 export function useGoogleSignIn() {
   const [request, response, promptAsync] = Google.useAuthRequest({
