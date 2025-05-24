@@ -1,4 +1,4 @@
-use_modular_headers!   
+require_relative '../node_modules/react-native-reanimated/scripts/reanimated_podspec'
 
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
@@ -15,8 +15,9 @@ install! 'cocoapods',
 
 prepare_react_native_project!
 
-target 'Voltuoso' do
+target 'voltuoso' do
   use_expo_modules!
+  use_reanimated!()
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
@@ -51,6 +52,13 @@ target 'Voltuoso' do
       :mac_catalyst_enabled => false,
       :ccache_enabled => podfile_properties['apple.ccacheEnabled'] == 'true',
     )
+    installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      flags = config.build_settings['OTHER_LDFLAGS'] ||= ['$(inherited)']
+      flags << '-ObjC' unless flags.include?('-ObjC')
+      config.build_settings['OTHER_LDFLAGS'] = flags
+    end
+  end
 
     # This is necessary for Xcode 14, because it signs resource bundles by default
     # when building for devices.
