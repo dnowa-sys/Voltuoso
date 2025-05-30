@@ -1,39 +1,8 @@
-import { Redirect, Stack } from "expo-router";
-import { StyleSheet } from 'react-native';
-import { useAuth } from "../../src/contexts/AuthContext";
+// app/(auth)/_layout.tsx
+import React from 'react';
 
+import { Slot } from 'expo-router';
 
-export default function AppLayout() {
-  const { user, loading } = useAuth();
-
-  if (loading) return null;
-
-  if (!user) {
-    return <Redirect href="/(auth)/login" />;
-  }
-
-  return (
-    <Stack
-      screenOptions={{
-        headerShown: true,
-        animation: "fade_from_bottom",
-      }}
-    />
-  );
+export default function AuthLayout() {
+  return <Slot />;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#ffffff",
-    padding: 24,
-    justifyContent: "center",
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 32,
-    color: "#333",
-  },
-});
