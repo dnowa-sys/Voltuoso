@@ -3,16 +3,7 @@ const { getDefaultConfig } = require('@expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
-// Add Reanimated plugin
-config.transformer = {
-  ...config.transformer,
-  babelTransformerPath: require.resolve('react-native-reanimated/plugin'),
-};
-
-// Allow .cjs extensions for Reanimated
-config.resolver = {
-  ...config.resolver,
-  sourceExts: [...config.resolver.sourceExts, 'cjs'],
-};
+// Add support for .cjs files
+config.resolver.sourceExts.push('cjs');
 
 module.exports = config;

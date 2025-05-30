@@ -2,7 +2,7 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Button, StyleSheet, Text, TextInput, View } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 
 export default function Register() {
   const { signUp } = useAuth();

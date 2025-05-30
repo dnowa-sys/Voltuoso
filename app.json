@@ -1,6 +1,11 @@
 {
   "expo": {
+    "name": "voltuoso",
+    "slug": "voltuoso",
+    "version": "1.0.0",
+    "scheme": "voltuoso",
     "newArchEnabled": false,
+    "platforms": ["ios", "android"],
     "plugins": [
       [
         "expo-build-properties",
@@ -37,6 +42,9 @@
         "android.permission.ACCESS_FINE_LOCATION"
       ],
       "package": "com.Voltuoso.Voltuoso"
+    },
+    "web": {
+      "bundler": "metro"
     }
   }
 }

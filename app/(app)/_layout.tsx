@@ -1,7 +1,7 @@
 // app/(app)/_layout.tsx
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 
 export default function AppTabsLayout() {
   const { user, loading } = useAuth();
@@ -23,7 +23,7 @@ export default function AppTabsLayout() {
           };
           return (
             <Ionicons
-              name={icons[route.name] ?? "apps-outline"}
+              name={(icons[route.name] ?? "apps-outline") as React.ComponentProps<typeof Ionicons>["name"]}
               size={size}
               color={color}
             />

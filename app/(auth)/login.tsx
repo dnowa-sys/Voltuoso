@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();
@@ -49,7 +49,7 @@ export default function LoginScreen() {
         style={styles.link}
         onPress={() => router.push("/(auth)/register")}
       >
-        <Text style={styles.linkText}>Don't have an account? Sign up</Text>
+        <Text style={styles.linkText}>Don&#39;t have an account? Sign up</Text>
       </TouchableOpacity>
     </View>
   );

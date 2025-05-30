@@ -1,6 +1,6 @@
 import { useRouter } from "expo-router";
 import { Button, StyleSheet, Text, View } from "react-native";
-import { useAuth } from "../../context/AuthContext";
+import { useAuth } from "../../src/contexts/AuthContext";
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
