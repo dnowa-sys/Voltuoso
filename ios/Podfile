@@ -14,12 +14,7 @@ install! 'cocoapods',
 prepare_react_native_project!
 
 target 'voltuoso' do
-
-  pod 'RNFBApp',             :path => '../node_modules/@react-native-firebase/app',             :modular_headers => true
-  pod 'RNFBAuth',            :path => '../node_modules/@react-native-firebase/auth',            :modular_headers => true
-  pod 'RNFBCrashlytics',     :path => '../node_modules/@react-native-firebase/crashlytics',     :modular_headers => true
-
-  use_native_modules!
+  use_expo_modules!
 
   if ENV['EXPO_USE_COMMUNITY_AUTOLINKING'] == '1'
     config_command = ['node', '-e', "process.argv=['', '', 'config'];require('@react-native-community/cli').run()"];
