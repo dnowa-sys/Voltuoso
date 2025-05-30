@@ -1,5 +1,7 @@
 import { Redirect, Stack } from "expo-router";
+import { StyleSheet } from 'react-native';
 import { useAuth } from "../../src/contexts/AuthContext";
+
 
 export default function AppLayout() {
   const { user, loading } = useAuth();
