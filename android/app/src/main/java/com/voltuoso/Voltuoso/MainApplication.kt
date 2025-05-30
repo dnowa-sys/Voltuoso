@@ -1,4 +1,4 @@
-package com.dnowa.voltuoso
+package com.Voltuoso.Voltuoso
 
 import android.app.Application
 import android.content.res.Configuration
