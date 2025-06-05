@@ -49,6 +49,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.voltuoso.voltuoso",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "We need your location to show nearby charging stations.",
@@ -61,7 +62,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2ECC71"
       },
-      "permissions": [
+     "googleServicesFile": "./google-services.json",
+     "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],
