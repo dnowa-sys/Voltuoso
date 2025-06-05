@@ -2,33 +2,84 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
+import { LoadingSpinner } from '../../src/components/LoadingSpinner';
 import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function AppTabsLayout() {
   const { user, loading } = useAuth();
-  if (loading) return null;
-  if (!user) return <Redirect href="/(auth)/login" />;
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (!user) {
+    return <Redirect href="/(auth)/login" />;
+  }
+
   return (
     <Tabs
       screenOptions={({ route }) => ({
-        headerShown: true,
-        tabBarActiveTintColor: '#007AFF',
-        tabBarStyle: { paddingBottom: 5 },
-        tabBarIcon: ({ color, size }) => {
-          const icons: Record<string, string> = {
-            index: 'home-outline',
-            profile: 'person-outline',
-            settings: 'settings-outline',
+        headerShown: false,
+        tabBarActiveTintColor: '#2ECC71',
+        tabBarInactiveTintColor: '#999',
+        tabBarStyle: { 
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 60,
+          backgroundColor: 'white',
+          borderTopWidth: 1,
+          borderTopColor: '#e0e0e0',
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '600',
+        },
+        tabBarIcon: ({ color, size, focused }) => {
+          const icons: Record<string, keyof typeof Ionicons.glyphMap> = {
+            index: focused ? 'map' : 'map-outline',
+            profile: focused ? 'person' : 'person-outline',
+            settings: focused ? 'settings' : 'settings-outline',
+            sessions: focused ? 'time' : 'time-outline',
           };
+          
           return (
             <Ionicons
-              name={(icons[route.name] ?? 'apps-outline') as React.ComponentProps<typeof Ionicons>['name']}
+              name={icons[route.name] || 'apps-outline'}
               size={size}
               color={color}
             />
           );
-        },
+        }
       })}
-    />
+    >
+      <Tabs.Screen 
+        name="index" 
+        options={{ 
+          title: 'Map',
+          tabBarLabel: 'Find Stations'
+        }} 
+      />
+      <Tabs.Screen 
+        name="sessions" 
+        options={{ 
+          title: 'Sessions',
+          tabBarLabel: 'History'
+        }} 
+      />
+      <Tabs.Screen 
+        name="profile" 
+        options={{ 
+          title: 'Profile',
+          tabBarLabel: 'Profile'
+        }} 
+      />
+      <Tabs.Screen 
+        name="settings" 
+        options={{ 
+          title: 'Settings',
+          tabBarLabel: 'Settings'
+        }} 
+      />
+    </Tabs>
   );
 }

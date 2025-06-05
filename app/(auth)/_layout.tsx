@@ -1,8 +1,25 @@
 // app/(auth)/_layout.tsx
-import React from 'react';
-
-import { Slot } from 'expo-router';
+import { Redirect, Stack } from 'expo-router';
+import { LoadingSpinner } from '../../src/components/LoadingSpinner';
+import { useAuth } from '../../src/contexts/AuthContext';
 
 export default function AuthLayout() {
-  return <Slot />;
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner />;
+  }
+
+  if (user) {
+    return <Redirect href="/(app)" />;
+  }
+
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        presentation: 'card',
+      }}
+    />
+  );
 }

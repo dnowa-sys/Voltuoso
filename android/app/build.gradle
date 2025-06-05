@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.Voltuoso.Voltuoso'
+    namespace 'com.Voltuoso.app'
     defaultConfig {
-        applicationId 'com.Voltuoso.Voltuoso'
+        applicationId 'com.Voltuoso.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

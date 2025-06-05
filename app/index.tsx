@@ -1,3 +1,14 @@
-
 // app/index.tsx
-export { default } from './(app)/index';
+import { Redirect } from 'expo-router';
+import { LoadingSpinner } from '../src/components/LoadingSpinner';
+import { useAuth } from '../src/contexts/AuthContext';
+
+export default function Index() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return <LoadingSpinner message="Initializing..." />;
+  }
+
+  return <Redirect href={user ? "/(app)" : "/(auth)/login"} />;
+}

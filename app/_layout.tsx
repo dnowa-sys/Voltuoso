@@ -1,34 +1,35 @@
 // app/_layout.tsx
-import { Redirect, SplashScreen, Stack, usePathname } from 'expo-router';
+import { SplashScreen, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { useAuth } from '../src/contexts/AuthContext';
+import { ErrorBoundary } from '../src/components/ErrorBoundary';
+import { AuthProvider } from '../src/contexts/AuthContext';
 
+// Prevent auto-hiding of splash screen
 SplashScreen.preventAutoHideAsync();
 
-function RootLayoutNav() {
-  const { user, loading } = useAuth();
-  const pathname = usePathname();
-
+export default function RootLayout() {
   useEffect(() => {
-    const prepare = async () => {
-      await SplashScreen.hideAsync();
-    };
-    prepare();
+    // Hide splash screen after app is ready
+    const timer = setTimeout(() => {
+      SplashScreen.hideAsync();
+    }, 1000);
+
+    return () => clearTimeout(timer);
   }, []);
 
-  if (loading) return null;
-
-  const isAuthRoute = pathname.startsWith('/(auth)');
-  if (!user && !isAuthRoute) return <Redirect href="/(auth)/login" />;
-  if (user && isAuthRoute) return <Redirect href="/(app)" />;
-  return <Stack screenOptions={{ headerShown: false }} />;
-}
-
-export default function RootLayout() {
   return (
-    <SafeAreaProvider>
-      <RootLayoutNav />
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SafeAreaProvider>
+          <Stack 
+            screenOptions={{ 
+              headerShown: false,
+              animation: 'slide_from_right'
+            }} 
+          />
+        </SafeAreaProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }
