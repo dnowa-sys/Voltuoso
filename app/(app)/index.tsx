@@ -1,4 +1,4 @@
-// app/(app)/index.tsx - Fix beige map screen issue
+// app/(app)/index.tsx - Expo Go Compatible Version
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -9,25 +9,18 @@ import {
   Dimensions,
   Keyboard,
   SafeAreaView,
+  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
-import MapView, { Marker, Region } from 'react-native-maps';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
 import { Coordinates, Station } from '../../types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.3;
-
-// Calculate delta for 1 mile radius (approximately)
-const MILE_IN_DEGREES = 0.0145;
-const DEFAULT_ZOOM = {
-  latitudeDelta: MILE_IN_DEGREES * 2,
-  longitudeDelta: MILE_IN_DEGREES * 2,
-};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -37,11 +30,8 @@ export default function HomeScreen() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
-  const [region, setRegion] = useState<Region | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
-  const [mapReady, setMapReady] = useState(false);
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
-  const mapRef = useRef<MapView>(null);
 
   useEffect(() => {
     requestLocationPermission();
@@ -74,14 +64,7 @@ export default function HomeScreen() {
         longitude: location.coords.longitude,
       };
 
-      const newRegion = {
-        latitude: newCoords.latitude,
-        longitude: newCoords.longitude,
-        ...DEFAULT_ZOOM,
-      };
-
       setCoords(newCoords);
-      setRegion(newRegion);
       await fetchNearbyStations(newCoords.latitude, newCoords.longitude);
     } catch (err) {
       setError('Failed to get your location. Please enable location services.');
@@ -212,19 +195,7 @@ export default function HomeScreen() {
         };
       }
       
-      const newRegion = {
-        latitude: coordinates.latitude,
-        longitude: coordinates.longitude,
-        ...DEFAULT_ZOOM,
-      };
-
       setCoords(coordinates);
-      setRegion(newRegion);
-      
-      if (mapRef.current) {
-        mapRef.current.animateToRegion(newRegion, 1);
-      }
-      
       await fetchNearbyStations(coordinates.latitude, coordinates.longitude);
       setSearchTerm('');
       Alert.alert('Search Complete', `Found ${6} charging stations near ${searchTerm}`);
@@ -263,12 +234,6 @@ export default function HomeScreen() {
     }
   };
 
-  const handleMapPress = () => {
-    if (menuVisible) {
-      toggleMenu();
-    }
-  };
-
   const handleLocationPress = async () => {
     console.log('Location button pressed!');
     
@@ -291,27 +256,14 @@ export default function HomeScreen() {
         longitude: location.coords.longitude,
       };
 
-      const newRegion = {
-        latitude: newCoords.latitude,
-        longitude: newCoords.longitude,
-        ...DEFAULT_ZOOM,
-      };
-
       console.log('New location:', newCoords);
 
       setCoords(newCoords);
-      setRegion(newRegion);
-      
-      if (mapRef.current) {
-        mapRef.current.animateToRegion(newRegion, 1000);
-        console.log('Map animated to new region');
-      }
-      
       await fetchNearbyStations(newCoords.latitude, newCoords.longitude);
       
       Alert.alert(
         'Location Updated', 
-        `Centered on your current location\n${newCoords.latitude.toFixed(4)}, ${newCoords.longitude.toFixed(4)}`
+        `Found your current location!\n${newCoords.latitude.toFixed(4)}, ${newCoords.longitude.toFixed(4)}`
       );
       
     } catch (err) {
@@ -332,16 +284,23 @@ export default function HomeScreen() {
     setMenuVisible(!menuVisible);
   };
 
-  const handleMapReady = () => {
-    console.log('Map is ready!');
-    setMapReady(true);
+  const calculateDistance = (lat1: number, lon1: number, lat2: number, lon2: number) => {
+    const R = 3959; // Earth's radius in miles
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
   };
 
   if (loading) {
     return <LoadingSpinner message="Finding your location..." />;
   }
 
-  if (!coords || !region) {
+  if (!coords) {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Ionicons name="location-outline" size={64} color="#999" />
@@ -367,60 +326,77 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Map Loading Indicator */}
-      {!mapReady && (
-        <View style={styles.mapLoadingOverlay}>
-          <LoadingSpinner message="Loading map..." />
+      {/* Map Placeholder with Location Info */}
+      <View style={styles.mapContainer}>
+        <View style={styles.mapHeader}>
+          <View style={styles.locationInfo}>
+            <Ionicons name="location" size={20} color="#2ECC71" />
+            <Text style={styles.locationText}>
+              {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
+            </Text>
+          </View>
+          <Text style={styles.mapTitle}>🗺️ Charging Stations Near You</Text>
         </View>
-      )}
 
-      {/* Main Map */}
-      <MapView
-        ref={mapRef}
-        style={styles.map}
-        initialRegion={region}
-        region={region} // Add this to force re-render
-        showsUserLocation={true}
-        showsMyLocationButton={false}
-        showsCompass={false}
-        toolbarEnabled={false}
-        onPress={handleMapPress}
-        onMapReady={handleMapReady}
-        mapType="standard"
-        provider="google" // Explicitly use Google Maps
-        loadingEnabled={true}
-        loadingIndicatorColor="#2ECC71"
-        loadingBackgroundColor="#f5f5f5"
-        minZoomLevel={10}
-        maxZoomLevel={18}
-        pitchEnabled={false}
-        rotateEnabled={false}
-      >
-        {/* Only render markers after map is ready */}
-        {mapReady && stations.map((station) => (
-          <Marker
-            key={station.place_id}
-            coordinate={{
-              latitude: station.geometry.location.lat,
-              longitude: station.geometry.location.lng,
-            }}
-            title={station.name}
-            description={`${station.vicinity} • ${station.rating}⭐`}
-            onPress={() => handleStationPress(station.place_id)}
-          >
-            <View style={styles.markerContainer}>
-              <View style={styles.marker}>
-                <Ionicons name="flash" size={16} color="white" />
-              </View>
-              <View style={styles.markerLabel}>
-                <Text style={styles.markerLabelText} numberOfLines={1}>
-                  {station.name.split(' ')[0]}
-                </Text>
-              </View>
-            </View>
-          </Marker>
-        ))}
-      </MapView>
+        {/* Stations List */}
+        <ScrollView 
+          style={styles.stationsList} 
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.stationsContent}
+        >
+          {stations.map((station, index) => {
+            const distance = calculateDistance(
+              coords.latitude, 
+              coords.longitude, 
+              station.geometry.location.lat, 
+              station.geometry.location.lng
+            );
+
+            return (
+              <TouchableOpacity 
+                key={station.place_id} 
+                style={styles.stationCard}
+                onPress={() => handleStationPress(station.place_id)}
+              >
+                <View style={styles.stationHeader}>
+                  <View style={styles.stationIcon}>
+                    <Ionicons name="flash" size={20} color="#2ECC71" />
+                  </View>
+                  <View style={styles.stationInfo}>
+                    <Text style={styles.stationName}>{station.name}</Text>
+                    <Text style={styles.stationAddress}>{station.vicinity}</Text>
+                  </View>
+                  <View style={styles.stationMeta}>
+                    <View style={styles.ratingContainer}>
+                      <Ionicons name="star" size={14} color="#ffd700" />
+                      <Text style={styles.rating}>{station.rating?.toFixed(1)}</Text>
+                    </View>
+                    <Text style={styles.distance}>{distance.toFixed(1)} mi</Text>
+                  </View>
+                </View>
+                
+                <View style={styles.stationDetails}>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="flash-outline" size={16} color="#666" />
+                    <Text style={styles.detailText}>50 kW DC Fast</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="card-outline" size={16} color="#666" />
+                    <Text style={styles.detailText}>$0.32/kWh</Text>
+                  </View>
+                  <View style={styles.detailItem}>
+                    <Ionicons name="time-outline" size={16} color="#666" />
+                    <Text style={styles.detailText}>~45 min</Text>
+                  </View>
+                  <View style={[styles.statusBadge, styles.available]}>
+                    <Text style={styles.statusText}>Available</Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+      </View>
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -526,48 +502,130 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  map: {
+  mapContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  mapHeader: {
+    backgroundColor: 'white',
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+    alignItems: 'center',
+  },
+  locationInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  locationText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 6,
+    fontFamily: 'monospace',
+  },
+  mapTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  stationsList: {
     flex: 1,
   },
-  mapLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: '#f5f5f5',
-    zIndex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  stationsContent: {
+    padding: 16,
+    paddingBottom: 100, // Space for bottom menu
   },
-  markerContainer: {
-    alignItems: 'center',
-  },
-  marker: {
-    backgroundColor: '#2ECC71',
-    padding: 8,
-    borderRadius: 20,
-    borderWidth: 3,
-    borderColor: 'white',
+  stationCard: {
+    backgroundColor: 'white',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 4,
-    elevation: 5,
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
   },
-  markerLabel: {
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginTop: 4,
-    maxWidth: 80,
+  stationHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
   },
-  markerLabelText: {
-    color: 'white',
-    fontSize: 10,
+  stationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e8f5e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stationInfo: {
+    flex: 1,
+  },
+  stationName: {
+    fontSize: 16,
     fontWeight: '600',
-    textAlign: 'center',
+    color: '#333',
+    marginBottom: 4,
+  },
+  stationAddress: {
+    fontSize: 14,
+    color: '#666',
+  },
+  stationMeta: {
+    alignItems: 'flex-end',
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  rating: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  distance: {
+    fontSize: 12,
+    color: '#2ECC71',
+    fontWeight: '600',
+  },
+  stationDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  detailText: {
+    fontSize: 12,
+    color: '#666',
+    marginLeft: 4,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  available: {
+    backgroundColor: '#e8f5e8',
+  },
+  statusText: {
+    fontSize: 12,
+    color: '#2ECC71',
+    fontWeight: '600',
   },
   errorContainer: {
     flex: 1,
