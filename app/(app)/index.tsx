@@ -1,4 +1,4 @@
-// app/(app)/index.tsx - Expo Go Compatible Version
+// app/(app)/index.tsx - Expo Go Compatible Version with Map
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -16,14 +16,19 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
 import { Coordinates, Station } from '../../types';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-const SHEET_HEIGHT = SCREEN_HEIGHT * 0.3;
+const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
+const SHEET_HEIGHT = SCREEN_HEIGHT * 0.4;
+const ASPECT_RATIO = SCREEN_WIDTH / SCREEN_HEIGHT;
+const LATITUDE_DELTA = 0.0922;
+const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const mapRef = useRef<MapView>(null);
   const [stations, setStations] = useState<Station[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -31,6 +36,7 @@ export default function HomeScreen() {
   const [searchLoading, setSearchLoading] = useState(false);
   const [coords, setCoords] = useState<Coordinates | null>(null);
   const [menuVisible, setMenuVisible] = useState(false);
+  const [selectedStation, setSelectedStation] = useState<Station | null>(null);
   const slideAnim = useRef(new Animated.Value(SHEET_HEIGHT)).current;
 
   useEffect(() => {
@@ -197,6 +203,15 @@ export default function HomeScreen() {
       
       setCoords(coordinates);
       await fetchNearbyStations(coordinates.latitude, coordinates.longitude);
+      
+      // Animate map to new location
+      mapRef.current?.animateToRegion({
+        latitude: coordinates.latitude,
+        longitude: coordinates.longitude,
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA,
+      }, 1000);
+      
       setSearchTerm('');
       Alert.alert('Search Complete', `Found ${6} charging stations near ${searchTerm}`);
     } catch (err) {
@@ -261,6 +276,14 @@ export default function HomeScreen() {
       setCoords(newCoords);
       await fetchNearbyStations(newCoords.latitude, newCoords.longitude);
       
+      // Animate map to current location
+      mapRef.current?.animateToRegion({
+        latitude: newCoords.latitude,
+        longitude: newCoords.longitude,
+        latitudeDelta: LATITUDE_DELTA,
+        longitudeDelta: LONGITUDE_DELTA,
+      }, 1000);
+      
       Alert.alert(
         'Location Updated', 
         `Found your current location!\n${newCoords.latitude.toFixed(4)}, ${newCoords.longitude.toFixed(4)}`
@@ -296,6 +319,10 @@ export default function HomeScreen() {
     return R * c;
   };
 
+  const handleMarkerPress = (station: Station) => {
+    setSelectedStation(station);
+  };
+
   if (loading) {
     return <LoadingSpinner message="Finding your location..." />;
   }
@@ -326,77 +353,87 @@ export default function HomeScreen() {
         </View>
       )}
 
-      {/* Map Placeholder with Location Info */}
-      <View style={styles.mapContainer}>
-        <View style={styles.mapHeader}>
-          <View style={styles.locationInfo}>
-            <Ionicons name="location" size={20} color="#2ECC71" />
-            <Text style={styles.locationText}>
-              {coords.latitude.toFixed(4)}, {coords.longitude.toFixed(4)}
-            </Text>
-          </View>
-          <Text style={styles.mapTitle}>🗺️ Charging Stations Near You</Text>
-        </View>
+      {/* Map View */}
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        initialRegion={{
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          latitudeDelta: LATITUDE_DELTA,
+          longitudeDelta: LONGITUDE_DELTA,
+        }}
+        showsUserLocation={true}
+        showsMyLocationButton={false}
+        showsCompass={false}
+      >
+        {stations.map((station) => (
+          <Marker
+            key={station.place_id}
+            coordinate={{
+              latitude: station.geometry.location.lat,
+              longitude: station.geometry.location.lng,
+            }}
+            onPress={() => handleMarkerPress(station)}
+          >
+            <View style={styles.markerContainer}>
+              <View style={styles.marker}>
+                <Ionicons name="flash" size={20} color="white" />
+              </View>
+            </View>
+          </Marker>
+        ))}
+      </MapView>
 
-        {/* Stations List */}
-        <ScrollView 
-          style={styles.stationsList} 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.stationsContent}
+      {/* Selected Station Card */}
+      {selectedStation && (
+        <TouchableOpacity 
+          style={styles.selectedStationCard}
+          onPress={() => handleStationPress(selectedStation.place_id)}
+          activeOpacity={0.95}
         >
-          {stations.map((station, index) => {
-            const distance = calculateDistance(
-              coords.latitude, 
-              coords.longitude, 
-              station.geometry.location.lat, 
-              station.geometry.location.lng
-            );
-
-            return (
-              <TouchableOpacity 
-                key={station.place_id} 
-                style={styles.stationCard}
-                onPress={() => handleStationPress(station.place_id)}
-              >
-                <View style={styles.stationHeader}>
-                  <View style={styles.stationIcon}>
-                    <Ionicons name="flash" size={20} color="#2ECC71" />
-                  </View>
-                  <View style={styles.stationInfo}>
-                    <Text style={styles.stationName}>{station.name}</Text>
-                    <Text style={styles.stationAddress}>{station.vicinity}</Text>
-                  </View>
-                  <View style={styles.stationMeta}>
-                    <View style={styles.ratingContainer}>
-                      <Ionicons name="star" size={14} color="#ffd700" />
-                      <Text style={styles.rating}>{station.rating?.toFixed(1)}</Text>
-                    </View>
-                    <Text style={styles.distance}>{distance.toFixed(1)} mi</Text>
-                  </View>
-                </View>
-                
-                <View style={styles.stationDetails}>
-                  <View style={styles.detailItem}>
-                    <Ionicons name="flash-outline" size={16} color="#666" />
-                    <Text style={styles.detailText}>50 kW DC Fast</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Ionicons name="card-outline" size={16} color="#666" />
-                    <Text style={styles.detailText}>$0.32/kWh</Text>
-                  </View>
-                  <View style={styles.detailItem}>
-                    <Ionicons name="time-outline" size={16} color="#666" />
-                    <Text style={styles.detailText}>~45 min</Text>
-                  </View>
-                  <View style={[styles.statusBadge, styles.available]}>
-                    <Text style={styles.statusText}>Available</Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+          <View style={styles.stationCardHeader}>
+            <View style={styles.stationIcon}>
+              <Ionicons name="flash" size={24} color="#2ECC71" />
+            </View>
+            <View style={styles.stationInfo}>
+              <Text style={styles.stationName}>{selectedStation.name}</Text>
+              <Text style={styles.stationAddress}>{selectedStation.vicinity}</Text>
+            </View>
+            <TouchableOpacity 
+              style={styles.closeButton}
+              onPress={() => setSelectedStation(null)}
+            >
+              <Ionicons name="close" size={20} color="#666" />
+            </TouchableOpacity>
+          </View>
+          
+          <View style={styles.stationCardDetails}>
+            <View style={styles.detailItem}>
+              <Ionicons name="star" size={16} color="#ffd700" />
+              <Text style={styles.detailText}>{selectedStation.rating?.toFixed(1)}</Text>
+            </View>
+            <View style={styles.detailItem}>
+              <Ionicons name="navigate" size={16} color="#666" />
+              <Text style={styles.detailText}>
+                {calculateDistance(
+                  coords.latitude,
+                  coords.longitude,
+                  selectedStation.geometry.location.lat,
+                  selectedStation.geometry.location.lng
+                ).toFixed(1)} mi
+              </Text>
+            </View>
+            <View style={[styles.statusBadge, styles.available]}>
+              <Text style={styles.statusText}>Available</Text>
+            </View>
+          </View>
+          
+          <View style={styles.stationCardFooter}>
+            <Text style={styles.tapToView}>Tap to view details →</Text>
+          </View>
+        </TouchableOpacity>
+      )}
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
@@ -460,38 +497,57 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/profile'); }}>
-          <View style={styles.menuItemIcon}>
-            <Ionicons name="person-outline" size={24} color="#2ECC71" />
-          </View>
-          <View style={styles.menuItemContent}>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.stationsList}>
+          <Text style={styles.nearbyStationsTitle}>Nearby Stations</Text>
+          {stations.map((station) => {
+            const distance = calculateDistance(
+              coords.latitude,
+              coords.longitude,
+              station.geometry.location.lat,
+              station.geometry.location.lng
+            );
+
+            return (
+              <TouchableOpacity
+                key={station.place_id}
+                style={styles.stationListItem}
+                onPress={() => {
+                  toggleMenu();
+                  handleStationPress(station.place_id);
+                }}
+              >
+                <View style={styles.stationListIcon}>
+                  <Ionicons name="flash" size={18} color="#2ECC71" />
+                </View>
+                <View style={styles.stationListInfo}>
+                  <Text style={styles.stationListName}>{station.name}</Text>
+                  <Text style={styles.stationListAddress}>{station.vicinity}</Text>
+                </View>
+                <View style={styles.stationListMeta}>
+                  <Text style={styles.stationListDistance}>{distance.toFixed(1)} mi</Text>
+                  <Ionicons name="chevron-forward" size={16} color="#999" />
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </ScrollView>
+
+        <View style={styles.menuActions}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/profile'); }}>
+            <Ionicons name="person-outline" size={20} color="#2ECC71" />
             <Text style={styles.menuItemText}>Profile</Text>
-            <Text style={styles.menuItemSubtext}>View your charging stats</Text>
-          </View>
-          <Ionicons name="chevron-forward-outline" size={20} color="#999" />
-        </TouchableOpacity>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/sessions'); }}>
-          <View style={styles.menuItemIcon}>
-            <Ionicons name="time-outline" size={24} color="#2ECC71" />
-          </View>
-          <View style={styles.menuItemContent}>
-            <Text style={styles.menuItemText}>Charging History</Text>
-            <Text style={styles.menuItemSubtext}>See past sessions</Text>
-          </View>
-          <Ionicons name="chevron-forward-outline" size={20} color="#999" />
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/sessions'); }}>
+            <Ionicons name="time-outline" size={20} color="#2ECC71" />
+            <Text style={styles.menuItemText}>History</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/settings'); }}>
-          <View style={styles.menuItemIcon}>
-            <Ionicons name="settings-outline" size={24} color="#2ECC71" />
-          </View>
-          <View style={styles.menuItemContent}>
+          <TouchableOpacity style={styles.menuItem} onPress={() => { toggleMenu(); router.push('/(app)/settings'); }}>
+            <Ionicons name="settings-outline" size={20} color="#2ECC71" />
             <Text style={styles.menuItemText}>Settings</Text>
-            <Text style={styles.menuItemSubtext}>Customize your app</Text>
-          </View>
-          <Ionicons name="chevron-forward-outline" size={20} color="#999" />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
       </Animated.View>
     </SafeAreaView>
   );
@@ -502,130 +558,24 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  mapContainer: {
-    flex: 1,
-    backgroundColor: '#f8f9fa',
-  },
-  mapHeader: {
-    backgroundColor: 'white',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    alignItems: 'center',
-  },
-  locationInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#666',
-    marginLeft: 6,
-    fontFamily: 'monospace',
-  },
-  mapTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-  },
-  stationsList: {
+  map: {
     flex: 1,
   },
-  stationsContent: {
-    padding: 16,
-    paddingBottom: 100, // Space for bottom menu
+  markerContainer: {
+    alignItems: 'center',
   },
-  stationCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+  marker: {
+    backgroundColor: '#2ECC71',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  stationHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  stationIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#e8f5e8',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 12,
-  },
-  stationInfo: {
-    flex: 1,
-  },
-  stationName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  stationAddress: {
-    fontSize: 14,
-    color: '#666',
-  },
-  stationMeta: {
-    alignItems: 'flex-end',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  rating: {
-    fontSize: 14,
-    color: '#333',
-    marginLeft: 4,
-    fontWeight: '500',
-  },
-  distance: {
-    fontSize: 12,
-    color: '#2ECC71',
-    fontWeight: '600',
-  },
-  stationDetails: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  detailItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f8f9fa',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  detailText: {
-    fontSize: 12,
-    color: '#666',
-    marginLeft: 4,
-  },
-  statusBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-  },
-  available: {
-    backgroundColor: '#e8f5e8',
-  },
-  statusText: {
-    fontSize: 12,
-    color: '#2ECC71',
-    fontWeight: '600',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
   },
   errorContainer: {
     flex: 1,
@@ -676,6 +626,96 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     flex: 1,
+  },
+  selectedStationCard: {
+    position: 'absolute',
+    bottom: 80,
+    left: 20,
+    right: 20,
+    backgroundColor: 'white',
+    borderRadius: 16,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 6,
+    zIndex: 100,
+  },
+  stationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  stationIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#e8f5e8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  stationInfo: {
+    flex: 1,
+  },
+  stationName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  stationAddress: {
+    fontSize: 14,
+    color: '#666',
+  },
+  closeButton: {
+    padding: 8,
+  },
+  stationCardDetails: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 8,
+  },
+  detailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  detailText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+  statusBadge: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  available: {
+    backgroundColor: '#e8f5e8',
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#2ECC71',
+    fontWeight: '600',
+  },
+  stationCardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+    paddingTop: 8,
+    marginTop: 4,
+  },
+  tapToView: {
+    fontSize: 14,
+    color: '#2ECC71',
+    fontWeight: '500',
+    textAlign: 'center',
   },
   searchContainer: {
     position: 'absolute',
@@ -782,8 +822,8 @@ const styles = StyleSheet.create({
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 16,
+    marginBottom: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
@@ -801,33 +841,69 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
   },
-  menuItem: {
+  stationsList: {
+    flex: 1,
+    marginBottom: 16,
+  },
+  nearbyStationsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 12,
+  },
+  stationListItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f5f5f5',
   },
-  menuItemIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  stationListIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#f0f9ff',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 16,
+    marginRight: 12,
   },
-  menuItemContent: {
+  stationListInfo: {
+    flex: 1,
+  },
+  stationListName: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  stationListAddress: {
+    fontSize: 13,
+    color: '#666',
+  },
+  stationListMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  stationListDistance: {
+    fontSize: 14,
+    color: '#2ECC71',
+    fontWeight: '600',
+  },
+  menuActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  menuItem: {
+    alignItems: 'center',
     flex: 1,
   },
   menuItemText: {
-    fontSize: 16,
-    color: '#333',
-    fontWeight: '500',
-  },
-  menuItemSubtext: {
-    fontSize: 13,
+    fontSize: 12,
     color: '#666',
-    marginTop: 2,
+    marginTop: 4,
   },
 });
