@@ -3,7 +3,7 @@ import { SplashScreen, Stack } from 'expo-router';
 import React, { useEffect } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { ErrorBoundary } from '../src/components/ErrorBoundary';
-import { AuthProvider } from '../src/contexts/AuthContext';
+import { AuthProvider } from '../src/context/AuthContext';
 
 // Prevent auto-hiding of splash screen
 SplashScreen.preventAutoHideAsync();

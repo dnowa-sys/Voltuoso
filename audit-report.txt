@@ -1,8 +1,0 @@
-🔍 Voltuoso App Code Audit Script
-=================================
-Report generated on: Fri May 30 15:16:57 CDT 2025
-
-📁 Scanning app/ directory...
-
-1. Checking for missing StyleSheet imports...
-================================================

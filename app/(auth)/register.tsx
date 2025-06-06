@@ -2,17 +2,17 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View
 } from "react-native";
-import { useAuth } from "../../src/contexts/AuthContext";
+import { useAuth } from "../../src/context/AuthContext";
 
 export default function RegisterScreen() {
   const { signUp } = useAuth();

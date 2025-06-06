@@ -12,7 +12,7 @@ import {
   TouchableOpacity,
   View
 } from "react-native";
-import { useAuth } from "../../src/contexts/AuthContext";
+import { useAuth } from "../../src/context/AuthContext";
 
 export default function LoginScreen() {
   const { signIn } = useAuth();

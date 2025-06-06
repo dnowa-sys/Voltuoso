@@ -1,7 +1,7 @@
 // app/index.tsx
 import { Redirect } from 'expo-router';
 import { LoadingSpinner } from '../src/components/LoadingSpinner';
-import { useAuth } from '../src/contexts/AuthContext';
+import { useAuth } from '../src/context/AuthContext';
 
 export default function Index() {
   const { user, loading } = useAuth();

@@ -1,9 +1,10 @@
 // app/(app)/_layout.tsx
+import React from 'react';
+
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, Tabs } from 'expo-router';
-import React from 'react';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
-import { useAuth } from '../../src/contexts/AuthContext';
+import { useAuth } from '../../src/context/AuthContext';
 
 export default function AppTabsLayout() {
   const { user, loading } = useAuth();

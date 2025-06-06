@@ -99,5 +99,9 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>LSApplicationQueriesSchemes</key>
+      <array>
+        <string>stripe</string>
+      </array>
   </dict>
 </plist>
