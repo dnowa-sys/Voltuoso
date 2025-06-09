@@ -12,22 +12,28 @@ import {
 } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, ProgressBar } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { paymentService } from '../../src/services/paymentService';
+import { ChargingSession } from '../../src/types/payment';
 
 const { width } = Dimensions.get('window');
 
-export default function ChargingSession() {
+export default function ChargingSessionScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
+  
+  // Mock user ID - replace with real auth
+  const userId = 'user123';
   
   // Extract params
   const {
     stationId = 'station_001',
     stationName = 'Test Charging Station',
-    paymentIntentId = 'pi_test_123',
-    sessionId = 'session_test_456',
+    paymentIntentId = '',
+    sessionId = '',
   } = params;
 
   // Session state
+  const [session, setSession] = useState<ChargingSession | null>(null);
   const [loading, setLoading] = useState(true);
   const [isCharging, setIsCharging] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connecting' | 'connected' | 'charging' | 'error'>('connecting');
@@ -37,7 +43,7 @@ export default function ChargingSession() {
   const [currentPower, setCurrentPower] = useState(0);
   const [chargingTime, setChargingTime] = useState(0);
   const [estimatedCost, setEstimatedCost] = useState(0);
-  const [batteryLevel, setBatteryLevel] = useState(45); // Mock initial battery level
+  const [batteryLevel, setBatteryLevel] = useState(45);
   const [targetBatteryLevel, setTargetBatteryLevel] = useState(80);
   
   // Animation values
@@ -45,13 +51,18 @@ export default function ChargingSession() {
   const progressAnim = useRef(new Animated.Value(0.45)).current;
   const powerGaugeAnim = useRef(new Animated.Value(0)).current;
 
+  // Refs for cleanup
+  const unsubscribeSession = useRef<(() => void) | null>(null);
+  const chargingTimer = useRef<NodeJS.Timeout | null>(null);
+  const currentSessionId = useRef<string>('');
+
   useEffect(() => {
     initializeSession();
     
     return () => {
-      // Cleanup polling when component unmounts
-      if (pollingInterval.current) {
-        clearInterval(pollingInterval.current);
+      // Cleanup subscriptions and timers
+      if (unsubscribeSession.current) {
+        unsubscribeSession.current();
       }
       if (chargingTimer.current) {
         clearInterval(chargingTimer.current);
@@ -63,20 +74,40 @@ export default function ChargingSession() {
     if (isCharging) {
       startPulseAnimation();
       startChargingTimer();
-      startStatusPolling();
     } else {
       stopPulseAnimation();
       stopChargingTimer();
     }
   }, [isCharging]);
 
-  const pollingInterval = useRef<NodeJS.Timeout | null>(null);
-  const chargingTimer = useRef<NodeJS.Timeout | null>(null);
-
   const initializeSession = async () => {
     try {
       setLoading(true);
       
+      let activeSessionId = sessionId as string;
+      
+      // Create new session if not provided
+      if (!activeSessionId) {
+        activeSessionId = await paymentService.createChargingSession({
+          userId,
+          stationId: stationId as string,
+          transactionId: '', // Will be set when payment is captured
+          paymentIntentId: paymentIntentId as string,
+          status: 'authorized',
+          authorizedAmount: 2500, // Mock amount - should come from payment
+          energyDelivered: 0,
+          hardwareStatus: 'connecting',
+        });
+      }
+
+      currentSessionId.current = activeSessionId;
+
+      // Set up real-time listener for session updates
+      unsubscribeSession.current = paymentService.subscribeToChargingSession(
+        activeSessionId,
+        handleSessionUpdate
+      );
+
       // Simulate connection process
       setTimeout(() => {
         setConnectionStatus('connected');
@@ -90,28 +121,74 @@ export default function ChargingSession() {
     }
   };
 
-  const startStatusPolling = () => {
-    // Poll charging status every 3 seconds during charging
-    pollingInterval.current = setInterval(() => {
-      updateChargingStatus();
-    }, 3000);
-  };
+  const handleSessionUpdate = (updatedSession: ChargingSession | null) => {
+    if (updatedSession) {
+      setSession(updatedSession);
+      
+      // Update local state from session data
+      if (updatedSession.status === 'active' && !isCharging) {
+        setIsCharging(true);
+        setConnectionStatus('charging');
+      } else if (updatedSession.status === 'completed') {
+        handleSessionComplete(updatedSession);
+      }
 
-  const stopStatusPolling = () => {
-    if (pollingInterval.current) {
-      clearInterval(pollingInterval.current);
-      pollingInterval.current = null;
+      // Update metrics if available
+      if (updatedSession.energyDelivered !== undefined) {
+        setEnergyDelivered(updatedSession.energyDelivered);
+      }
+      
+      if (updatedSession.currentPower !== undefined) {
+        setCurrentPower(updatedSession.currentPower);
+      }
     }
   };
 
-  const updateChargingStatus = () => {
-    if (isCharging && batteryLevel < targetBatteryLevel) {
-      // Simulate realistic charging progress
-      const chargingRate = Math.random() * 1.5 + 0.5; // 0.5-2% per update
-      const newBatteryLevel = Math.min(targetBatteryLevel, batteryLevel + chargingRate);
+  const handleSessionComplete = async (completedSession: ChargingSession) => {
+    setIsCharging(false);
+    stopChargingTimer();
+    setConnectionStatus('connected');
+
+    // Navigate to completion screen
+    router.push({
+      pathname: '/charging-complete',
+      params: {
+        energyDelivered: completedSession.energyDelivered.toFixed(2),
+        finalCost: ((completedSession.finalAmount || completedSession.authorizedAmount) / 100).toFixed(2),
+        chargingTime: formatTime(chargingTime),
+        batteryLevel: Math.round(batteryLevel).toString(),
+        stationName: stationName as string,
+        sessionId: completedSession.id,
+      },
+    });
+  };
+
+  const startChargingTimer = () => {
+    chargingTimer.current = setInterval(() => {
+      setChargingTime(prev => prev + 1);
       
-      const newEnergyDelivered = energyDelivered + (Math.random() * 0.8 + 0.4); // 0.4-1.2 kWh per update
-      const newCurrentPower = Math.random() * 15 + 40; // 40-55 kW
+      // Simulate real-time updates during charging
+      if (isCharging) {
+        updateChargingMetrics();
+      }
+    }, 1000);
+  };
+
+  const stopChargingTimer = () => {
+    if (chargingTimer.current) {
+      clearInterval(chargingTimer.current);
+      chargingTimer.current = null;
+    }
+  };
+
+  const updateChargingMetrics = () => {
+    // Simulate realistic charging progress
+    if (batteryLevel < targetBatteryLevel) {
+      const chargingRate = Math.random() * 1.2 + 0.4; // 0.4-1.6% per minute
+      const newBatteryLevel = Math.min(targetBatteryLevel, batteryLevel + (chargingRate / 60)); // Per second
+      
+      const newEnergyDelivered = energyDelivered + (Math.random() * 0.02 + 0.01); // kWh per second
+      const newCurrentPower = Math.random() * 10 + 45; // 45-55 kW
       
       setBatteryLevel(newBatteryLevel);
       setEnergyDelivered(newEnergyDelivered);
@@ -124,15 +201,24 @@ export default function ChargingSession() {
       // Update animations
       Animated.timing(progressAnim, {
         toValue: newBatteryLevel / 100,
-        duration: 2000,
+        duration: 1000,
         useNativeDriver: false,
       }).start();
       
       Animated.timing(powerGaugeAnim, {
-        toValue: newCurrentPower / 60, // Max 60 kW for animation
-        duration: 2000,
+        toValue: newCurrentPower / 60,
+        duration: 1000,
         useNativeDriver: false,
       }).start();
+
+      // Update session in Firebase every 5 seconds
+      if (chargingTime % 5 === 0 && session) {
+        paymentService.updateChargingSession(session.id, {
+          energyDelivered: newEnergyDelivered,
+          currentPower: newCurrentPower,
+          lastHeartbeat: new Date(),
+        }).catch(console.error);
+      }
       
       // Auto-stop when target reached
       if (newBatteryLevel >= targetBatteryLevel) {
@@ -140,19 +226,6 @@ export default function ChargingSession() {
           handleStopCharging();
         }, 1000);
       }
-    }
-  };
-
-  const startChargingTimer = () => {
-    chargingTimer.current = setInterval(() => {
-      setChargingTime(prev => prev + 1);
-    }, 1000);
-  };
-
-  const stopChargingTimer = () => {
-    if (chargingTimer.current) {
-      clearInterval(chargingTimer.current);
-      chargingTimer.current = null;
     }
   };
 
@@ -184,8 +257,19 @@ export default function ChargingSession() {
     try {
       setLoading(true);
       
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      if (!currentSessionId.current) {
+        throw new Error('No active session');
+      }
+
+      // Update session status to active
+      await paymentService.updateChargingSession(currentSessionId.current, {
+        status: 'active',
+        startTime: new Date(),
+        hardwareStatus: 'charging',
+      });
+
+      // Update station availability
+      await paymentService.updateStationAvailability(stationId as string, 'in_use');
       
       setIsCharging(true);
       setConnectionStatus('charging');
@@ -195,6 +279,7 @@ export default function ChargingSession() {
     } catch (error) {
       Alert.alert('Error', 'Failed to start charging. Please try again.');
       setConnectionStatus('error');
+      console.error('Start charging error:', error);
     } finally {
       setLoading(false);
     }
@@ -204,28 +289,55 @@ export default function ChargingSession() {
     try {
       setLoading(true);
       
-      setIsCharging(false);
-      stopChargingTimer();
-      stopStatusPolling();
-      setConnectionStatus('connected');
-      
-      // Simulate saving session data
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Navigate to completion screen
-      router.push({
-        pathname: '/charging-complete',
-        params: {
-          energyDelivered: energyDelivered.toFixed(2),
-          finalCost: (estimatedCost / 100).toFixed(2),
-          chargingTime: formatTime(chargingTime),
-          batteryLevel: Math.round(batteryLevel).toString(),
-          stationName: stationName as string,
-        },
+      if (!currentSessionId.current) {
+        throw new Error('No active session');
+      }
+
+      // Update session status to completed
+      await paymentService.updateChargingSession(currentSessionId.current, {
+        status: 'completed',
+        endTime: new Date(),
+        energyDelivered,
+        finalAmount: Math.round(estimatedCost),
+        hardwareStatus: 'connected',
       });
+
+      // Update station availability
+      await paymentService.updateStationAvailability(stationId as string, 'available');
+
+      // Capture the actual payment amount
+      if (paymentIntentId) {
+        await paymentService.capturePayment(paymentIntentId as string, Math.round(estimatedCost));
+      }
+
+      // Create transaction record
+      const transactionId = await paymentService.saveTransaction({
+        userId,
+        stationId: stationId as string,
+        stationName: stationName as string,
+        amount: Math.round(estimatedCost),
+        currency: 'usd',
+        status: 'succeeded',
+        paymentMethodId: 'authorized',
+        paymentIntentId: paymentIntentId as string,
+        sessionStartTime: session?.startTime,
+        sessionEndTime: new Date(),
+        energyDelivered,
+        receiptSent: false,
+      });
+
+      // Send receipt email
+      try {
+        await paymentService.sendReceipt(transactionId);
+      } catch (error) {
+        console.error('Failed to send receipt:', error);
+      }
+
+      // Will navigate via handleSessionUpdate when status changes
       
     } catch (error) {
       Alert.alert('Error', 'Failed to stop charging properly.');
+      console.error('Stop charging error:', error);
     } finally {
       setLoading(false);
     }
@@ -241,11 +353,37 @@ export default function ChargingSession() {
           text: 'Emergency Stop',
           style: 'destructive',
           onPress: async () => {
-            setIsCharging(false);
-            stopChargingTimer();
-            stopStatusPolling();
-            setConnectionStatus('connected');
-            Alert.alert('Charging Stopped', 'Charging has been stopped immediately.');
+            try {
+              if (currentSessionId.current) {
+                await paymentService.updateChargingSession(currentSessionId.current, {
+                  status: 'cancelled',
+                  endTime: new Date(),
+                  energyDelivered,
+                  hardwareStatus: 'error',
+                });
+
+                // Cancel the payment intent
+                if (paymentIntentId) {
+                  await paymentService.cancelPaymentIntent(paymentIntentId as string);
+                }
+
+                await paymentService.updateStationAvailability(stationId as string, 'available');
+              }
+              
+              setIsCharging(false);
+              stopChargingTimer();
+              setConnectionStatus('connected');
+              Alert.alert('Charging Stopped', 'Charging has been stopped immediately.');
+              
+              // Navigate back after emergency stop
+              setTimeout(() => {
+                router.back();
+              }, 2000);
+              
+            } catch (error) {
+              console.error('Emergency stop error:', error);
+              Alert.alert('Error', 'Failed to perform emergency stop properly.');
+            }
           },
         },
       ]
@@ -315,6 +453,7 @@ export default function ChargingSession() {
 
   return (
     <ScrollView style={styles.container}>
+      {/* Header */}
       <View style={[
         styles.headerGradient,
         { backgroundColor: isCharging ? '#4CAF50' : '#2196F3' }
@@ -330,6 +469,39 @@ export default function ChargingSession() {
           </Chip>
         </View>
       </View>
+
+      {/* Session Info */}
+      {session && (
+        <Card style={styles.sessionCard}>
+          <Card.Content>
+            <Text style={styles.sessionTitle}>Session Information</Text>
+            <View style={styles.sessionInfo}>
+              <Text style={styles.sessionLabel}>Session ID:</Text>
+              <Text style={styles.sessionValue}>{session.id.slice(-8).toUpperCase()}</Text>
+            </View>
+            <View style={styles.sessionInfo}>
+              <Text style={styles.sessionLabel}>Status:</Text>
+              <Text style={styles.sessionValue}>{session.status.toUpperCase()}</Text>
+            </View>
+            {session.startTime && (
+              <View style={styles.sessionInfo}>
+                <Text style={styles.sessionLabel}>Started:</Text>
+                <Text style={styles.sessionValue}>
+                  {session.startTime.toLocaleTimeString()}
+                </Text>
+              </View>
+            )}
+            {session.lastHeartbeat && (
+              <View style={styles.sessionInfo}>
+                <Text style={styles.sessionLabel}>Last Update:</Text>
+                <Text style={styles.sessionValue}>
+                  {session.lastHeartbeat.toLocaleTimeString()}
+                </Text>
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      )}
 
       {/* Charging Animation */}
       <View style={styles.chargingAnimation}>
@@ -439,7 +611,7 @@ export default function ChargingSession() {
           <Card.Content style={styles.metricContent}>
             <Icon name="attach-money" size={24} color="#4CAF50" />
             <Text style={styles.metricValue}>${(estimatedCost / 100).toFixed(2)}</Text>
-            <Text style={styles.metricLabel}>Cost</Text>
+            <Text style={styles.metricLabel}>Current Cost</Text>
           </Card.Content>
         </Card>
       </View>
@@ -567,6 +739,29 @@ const styles = StyleSheet.create({
   statusChipText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  sessionCard: {
+    margin: 16,
+    elevation: 2,
+  },
+  sessionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+  },
+  sessionInfo: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  sessionLabel: {
+    fontSize: 14,
+    color: '#666',
+  },
+  sessionValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#333',
   },
   chargingAnimation: {
     alignItems: 'center',
