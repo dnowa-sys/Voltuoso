@@ -54,7 +54,7 @@ export default function ChargingSessionScreen() {
   // Refs for cleanup
   const unsubscribeSession = useRef<(() => void) | null>(null);
   const chargingTimer = useRef<NodeJS.Timeout | null>(null);
-  const currentSessionId = useRef<string>('');
+  const updateInterval = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     initializeSession();
@@ -67,6 +67,9 @@ export default function ChargingSessionScreen() {
       if (chargingTimer.current) {
         clearInterval(chargingTimer.current);
       }
+      if (updateInterval.current) {
+        clearInterval(updateInterval.current);
+      }
     };
   }, []);
 
@@ -74,9 +77,11 @@ export default function ChargingSessionScreen() {
     if (isCharging) {
       startPulseAnimation();
       startChargingTimer();
+      startUpdateInterval();
     } else {
       stopPulseAnimation();
       stopChargingTimer();
+      stopUpdateInterval();
     }
   }, [isCharging]);
 
@@ -84,11 +89,11 @@ export default function ChargingSessionScreen() {
     try {
       setLoading(true);
       
-      let activeSessionId = sessionId as string;
+      let currentSessionId = sessionId as string;
       
       // Create new session if not provided
-      if (!activeSessionId) {
-        activeSessionId = await paymentService.createChargingSession({
+      if (!currentSessionId) {
+        currentSessionId = await paymentService.createChargingSession({
           userId,
           stationId: stationId as string,
           transactionId: '', // Will be set when payment is captured
@@ -100,11 +105,9 @@ export default function ChargingSessionScreen() {
         });
       }
 
-      currentSessionId.current = activeSessionId;
-
       // Set up real-time listener for session updates
       unsubscribeSession.current = paymentService.subscribeToChargingSession(
-        activeSessionId,
+        currentSessionId,
         handleSessionUpdate
       );
 
@@ -147,6 +150,7 @@ export default function ChargingSessionScreen() {
   const handleSessionComplete = async (completedSession: ChargingSession) => {
     setIsCharging(false);
     stopChargingTimer();
+    stopUpdateInterval();
     setConnectionStatus('connected');
 
     // Navigate to completion screen
@@ -166,11 +170,6 @@ export default function ChargingSessionScreen() {
   const startChargingTimer = () => {
     chargingTimer.current = setInterval(() => {
       setChargingTime(prev => prev + 1);
-      
-      // Simulate real-time updates during charging
-      if (isCharging) {
-        updateChargingMetrics();
-      }
     }, 1000);
   };
 
@@ -181,14 +180,28 @@ export default function ChargingSessionScreen() {
     }
   };
 
+  const startUpdateInterval = () => {
+    updateInterval.current = setInterval(() => {
+      updateChargingMetrics();
+    }, 3000); // Update every 3 seconds
+  };
+
+  const stopUpdateInterval = () => {
+    if (updateInterval.current) {
+      clearInterval(updateInterval.current);
+      updateInterval.current = null;
+    }
+  };
+
   const updateChargingMetrics = () => {
     // Simulate realistic charging progress
-    if (batteryLevel < targetBatteryLevel) {
-      const chargingRate = Math.random() * 1.2 + 0.4; // 0.4-1.6% per minute
-      const newBatteryLevel = Math.min(targetBatteryLevel, batteryLevel + (chargingRate / 60)); // Per second
+    if (isCharging && batteryLevel < targetBatteryLevel) {
+      const chargingRate = Math.random() * 0.8 + 0.3; // 0.3-1.1% per 3 seconds
+      const newBatteryLevel = Math.min(targetBatteryLevel, batteryLevel + chargingRate);
       
-      const newEnergyDelivered = energyDelivered + (Math.random() * 0.02 + 0.01); // kWh per second
-      const newCurrentPower = Math.random() * 10 + 45; // 45-55 kW
+      const energyRate = Math.random() * 0.4 + 0.2; // 0.2-0.6 kWh per 3 seconds
+      const newEnergyDelivered = energyDelivered + energyRate;
+      const newCurrentPower = Math.random() * 15 + 40; // 40-55 kW
       
       setBatteryLevel(newBatteryLevel);
       setEnergyDelivered(newEnergyDelivered);
@@ -201,30 +214,30 @@ export default function ChargingSessionScreen() {
       // Update animations
       Animated.timing(progressAnim, {
         toValue: newBatteryLevel / 100,
-        duration: 1000,
+        duration: 2000,
         useNativeDriver: false,
       }).start();
       
       Animated.timing(powerGaugeAnim, {
-        toValue: newCurrentPower / 60,
-        duration: 1000,
+        toValue: newCurrentPower / 60, // Max 60 kW for animation
+        duration: 2000,
         useNativeDriver: false,
       }).start();
 
-      // Update session in Firebase every 5 seconds
-      if (chargingTime % 5 === 0 && session) {
+      // Update session in Firebase
+      if (session) {
         paymentService.updateChargingSession(session.id, {
           energyDelivered: newEnergyDelivered,
           currentPower: newCurrentPower,
           lastHeartbeat: new Date(),
-        }).catch(console.error);
+        });
       }
       
       // Auto-stop when target reached
       if (newBatteryLevel >= targetBatteryLevel) {
         setTimeout(() => {
           handleStopCharging();
-        }, 1000);
+        }, 2000);
       }
     }
   };
@@ -257,12 +270,12 @@ export default function ChargingSessionScreen() {
     try {
       setLoading(true);
       
-      if (!currentSessionId.current) {
+      if (!session) {
         throw new Error('No active session');
       }
 
       // Update session status to active
-      await paymentService.updateChargingSession(currentSessionId.current, {
+      await paymentService.updateChargingSession(session.id, {
         status: 'active',
         startTime: new Date(),
         hardwareStatus: 'charging',
@@ -289,12 +302,12 @@ export default function ChargingSessionScreen() {
     try {
       setLoading(true);
       
-      if (!currentSessionId.current) {
+      if (!session) {
         throw new Error('No active session');
       }
 
       // Update session status to completed
-      await paymentService.updateChargingSession(currentSessionId.current, {
+      await paymentService.updateChargingSession(session.id, {
         status: 'completed',
         endTime: new Date(),
         energyDelivered,
@@ -307,7 +320,14 @@ export default function ChargingSessionScreen() {
 
       // Capture the actual payment amount
       if (paymentIntentId) {
-        await paymentService.capturePayment(paymentIntentId as string, Math.round(estimatedCost));
+        const captureSuccess = await paymentService.capturePayment(
+          paymentIntentId as string, 
+          Math.round(estimatedCost)
+        );
+        
+        if (!captureSuccess) {
+          console.warn('Payment capture failed, but session completed');
+        }
       }
 
       // Create transaction record
@@ -320,20 +340,22 @@ export default function ChargingSessionScreen() {
         status: 'succeeded',
         paymentMethodId: 'authorized',
         paymentIntentId: paymentIntentId as string,
-        sessionStartTime: session?.startTime,
+        sessionStartTime: session.startTime,
         sessionEndTime: new Date(),
         energyDelivered,
         receiptSent: false,
       });
 
       // Send receipt email
-      try {
-        await paymentService.sendReceipt(transactionId);
-      } catch (error) {
-        console.error('Failed to send receipt:', error);
-      }
+      setTimeout(async () => {
+        try {
+          await paymentService.sendReceipt(transactionId);
+        } catch (error) {
+          console.error('Failed to send receipt:', error);
+        }
+      }, 1000);
 
-      // Will navigate via handleSessionUpdate when status changes
+      // The session update will trigger navigation to completion screen
       
     } catch (error) {
       Alert.alert('Error', 'Failed to stop charging properly.');
@@ -346,7 +368,7 @@ export default function ChargingSessionScreen() {
   const handleEmergencyStop = () => {
     Alert.alert(
       'Emergency Stop',
-      'Are you sure you want to immediately stop charging?',
+      'Are you sure you want to immediately stop charging? This will cancel the payment authorization.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -354,8 +376,10 @@ export default function ChargingSessionScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
-              if (currentSessionId.current) {
-                await paymentService.updateChargingSession(currentSessionId.current, {
+              setLoading(true);
+              
+              if (session) {
+                await paymentService.updateChargingSession(session.id, {
                   status: 'cancelled',
                   endTime: new Date(),
                   energyDelivered,
@@ -372,17 +396,21 @@ export default function ChargingSessionScreen() {
               
               setIsCharging(false);
               stopChargingTimer();
+              stopUpdateInterval();
               setConnectionStatus('connected');
-              Alert.alert('Charging Stopped', 'Charging has been stopped immediately.');
               
-              // Navigate back after emergency stop
+              Alert.alert('Charging Stopped', 'Charging has been stopped and payment authorization cancelled.');
+              
+              // Navigate back after a delay
               setTimeout(() => {
                 router.back();
               }, 2000);
               
             } catch (error) {
               console.error('Emergency stop error:', error);
-              Alert.alert('Error', 'Failed to perform emergency stop properly.');
+              Alert.alert('Error', 'Failed to properly stop charging');
+            } finally {
+              setLoading(false);
             }
           },
         },
@@ -410,7 +438,7 @@ export default function ChargingSessionScreen() {
     if (!isCharging || batteryLevel >= targetBatteryLevel) return 'Complete';
     
     const remainingPercent = targetBatteryLevel - batteryLevel;
-    const averageRatePerMinute = 1.2; // Mock: 1.2% per minute
+    const averageRatePerMinute = 1.0; // Mock: 1% per minute
     const minutesRemaining = Math.round(remainingPercent / averageRatePerMinute);
     
     if (minutesRemaining < 60) {
@@ -491,14 +519,12 @@ export default function ChargingSessionScreen() {
                 </Text>
               </View>
             )}
-            {session.lastHeartbeat && (
-              <View style={styles.sessionInfo}>
-                <Text style={styles.sessionLabel}>Last Update:</Text>
-                <Text style={styles.sessionValue}>
-                  {session.lastHeartbeat.toLocaleTimeString()}
-                </Text>
-              </View>
-            )}
+            <View style={styles.sessionInfo}>
+              <Text style={styles.sessionLabel}>Authorization:</Text>
+              <Text style={styles.sessionValue}>
+                ${(session.authorizedAmount / 100).toFixed(2)}
+              </Text>
+            </View>
           </Card.Content>
         </Card>
       )}
