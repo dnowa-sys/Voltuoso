@@ -15,7 +15,7 @@
     "@expo/config-plugins": "~10.0.0",
     "@expo/metro-config": "^0.20.14",
     "@expo/vector-icons": "^14.1.0",
-    "@react-native-async-storage/async-storage": "2.1.2",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@react-native-firebase/app": "^22.2.0",
     "@react-native-firebase/auth": "^22.2.0",
     "@react-native-firebase/crashlytics": "^22.2.0",
@@ -70,6 +70,7 @@
     "react-native-vector-icons": "^10.2.0",
     "react-native-webview": "13.13.5",
     "rimraf": "^4.4.1",
+    "stripe": "^18.2.1",
     "typescript": "^5.8.3"
   },
   "devDependencies": {
