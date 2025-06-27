@@ -2,15 +2,16 @@
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View
 } from "react-native";
 import { useAuth } from "../../src/context/AuthContext";
 
@@ -23,6 +24,8 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
+    Keyboard.dismiss();
+
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       Alert.alert("Error", "Please fill in all fields");
       return;
@@ -40,9 +43,12 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await signUp(email.trim(), password);
+      await signUp(email.trim(), password, {
+        displayName: email.split("@")[0], // Optional, adds a default display name
+      });
       router.replace("/(app)");
     } catch (error: any) {
+      console.error("🔥 Registration error:", error);
       Alert.alert("Registration Failed", error.message || "Please try again");
     } finally {
       setLoading(false);
@@ -55,7 +61,7 @@ export default function RegisterScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
+        <View style={styles.form} pointerEvents={loading ? "none" : "auto"}>
           <Text style={styles.title}>Create Account</Text>
           <Text style={styles.subtitle}>Join Voltuoso today</Text>
 
@@ -118,15 +124,8 @@ export default function RegisterScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   form: {
     backgroundColor: 'white',
     padding: 30,
@@ -166,24 +165,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  linkContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  linkBold: {
-    color: '#2ECC71',
-    fontWeight: '600',
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: 'white', fontSize: 18, fontWeight: '600' },
+  linkContainer: { marginTop: 20, alignItems: 'center' },
+  linkText: { fontSize: 16, color: '#666' },
+  linkBold: { color: '#2ECC71', fontWeight: '600' },
 });

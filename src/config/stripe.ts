@@ -1,11 +1,13 @@
 // src/config/stripe.ts
+import Constants from "expo-constants";
 
-export const STRIPE_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+export const STRIPE_PUBLISHABLE_KEY = Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+
 
 // Stripe configuration
 export const stripeConfig = {
   publishableKey: STRIPE_PUBLISHABLE_KEY,
-  merchantId: process.env.EXPO_PUBLIC_STRIPE_MERCHANT_ID,
+  merchantId: Constants.expoConfig?.extra?.EXPO_PUBLIC_STRIPE_MERCHANT_ID,
   urlScheme: 'voltuoso', // Your app's URL scheme for redirects
 };
 

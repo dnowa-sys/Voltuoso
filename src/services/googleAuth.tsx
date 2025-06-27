@@ -1,13 +1,14 @@
-// services/googleAuth.ts
+// src/services/googleAuth.tsx
 import * as Google from "expo-auth-session/providers/google";
+import Constants from "expo-constants";
 import { GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth } from "./firebase";
 
 export function useGoogleSignIn() {
   const [request, response, promptAsync] = Google.useAuthRequest({
-    clientId: "FIREBASE_CLIENT_ID",
-    iosClientId: "FIREBASE_CLIENT_ID",
-    androidClientId: "FIREBASE_CLIENT_ID",
+    clientId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_CLIENT_ID,
+    iosClientId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_CLIENT_ID,
+    androidClientId: Constants.expoConfig?.extra?.EXPO_PUBLIC_FIREBASE_CLIENT_ID,
     scopes: ["profile", "email"],
   });
 

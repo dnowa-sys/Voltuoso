@@ -1,27 +1,28 @@
 // src/services/firebaseService.ts
 import {
-    addDoc,
-    collection,
-    deleteDoc,
-    doc,
-    getDoc,
-    getDocs,
-    limit,
-    onSnapshot,
-    orderBy,
-    query,
-    serverTimestamp,
-    Timestamp,
-    updateDoc,
-    where,
+  addDoc,
+  collection,
+  deleteDoc,
+  doc,
+  getDoc,
+  getDocs,
+  limit,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  Timestamp,
+  updateDoc,
+  where,
+  writeBatch,
 } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import {
-    ChargingSession,
-    PaymentMethod,
-    Station,
-    Transaction,
-    User,
+  ChargingSession,
+  PaymentMethod,
+  Station,
+  Transaction,
+  User,
 } from '../types/payment';
 
 class FirebaseService {
@@ -251,7 +252,7 @@ class FirebaseService {
       );
       
       const snapshot = await getDocs(userMethodsQuery);
-      const batch = db.batch ? db.batch() : null;
+      const batch = writeBatch(db);
       
       if (batch) {
         snapshot.docs.forEach(doc => {

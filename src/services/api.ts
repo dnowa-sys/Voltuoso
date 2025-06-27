@@ -66,4 +66,5 @@ class ApiService {
   }
 }
 
+export const API_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_BASE_URL;
 export const apiService = new ApiService();

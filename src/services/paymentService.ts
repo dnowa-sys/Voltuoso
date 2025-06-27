@@ -1,4 +1,5 @@
 // src/services/paymentService.ts - Simplified for Expo with Web Firebase SDK
+import Constants from "expo-constants";
 import {
   addDoc,
   collection,
@@ -14,6 +15,14 @@ import {
 import { httpsCallable } from 'firebase/functions';
 import { db, functions } from '../config/firebase';
 import { ChargingSession, PaymentMethod, Transaction } from '../types/payment';
+
+const API_BASE_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_BASE_URL;
+
+export const initiatePayment = async (sessionId: string) => {
+  const response = await fetch(`${API_BASE_URL}/start-payment/${sessionId}`);
+  return await response.json();
+};
+
 
 // Define the expected response types for Firebase Functions
 interface FunctionResponse {

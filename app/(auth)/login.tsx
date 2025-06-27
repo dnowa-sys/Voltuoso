@@ -1,8 +1,9 @@
-// app/(auth)/login.tsx - FIXED
+// app/(auth)/login.tsx
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Alert,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -27,11 +28,13 @@ export default function LoginScreen() {
       return;
     }
 
+    Keyboard.dismiss();
     setLoading(true);
     try {
       await signIn(email.trim(), password);
       router.replace("/(app)");
     } catch (error: any) {
+      console.error("🔥 Firebase Login Error:", error); // dev debug
       Alert.alert("Login Failed", error.message || "Please try again");
     } finally {
       setLoading(false);
@@ -44,7 +47,7 @@ export default function LoginScreen() {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.form}>
+        <View style={[styles.form]} pointerEvents={loading ? "none" : "auto"}>
           <Text style={styles.title}>Welcome Back</Text>
           <Text style={styles.subtitle}>Sign in to continue</Text>
 
@@ -87,7 +90,7 @@ export default function LoginScreen() {
             disabled={loading}
           >
             <Text style={styles.linkText}>
-              Don&apos;t have an account? <Text style={styles.linkBold}>Sign up</Text>
+              Don’t have an account? <Text style={styles.linkBold}>Sign up</Text>
             </Text>
           </TouchableOpacity>
         </View>
@@ -97,15 +100,8 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  scrollContent: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 20,
-  },
+  container: { flex: 1, backgroundColor: '#f5f5f5' },
+  scrollContent: { flexGrow: 1, justifyContent: 'center', padding: 20 },
   form: {
     backgroundColor: 'white',
     padding: 30,
@@ -145,24 +141,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 10,
   },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: '600',
-  },
-  linkContainer: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  linkText: {
-    fontSize: 16,
-    color: '#666',
-  },
-  linkBold: {
-    color: '#2ECC71',
-    fontWeight: '600',
-  },
+  buttonDisabled: { opacity: 0.6 },
+  buttonText: { color: 'white', fontSize: 18, fontWeight: '600' },
+  linkContainer: { marginTop: 20, alignItems: 'center' },
+  linkText: { fontSize: 16, color: '#666' },
+  linkBold: { color: '#2ECC71', fontWeight: '600' },
 });

@@ -74,7 +74,8 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "GOOGLE_CLOUD_API_KEY": "GOOGLE_CLOUD_API_KEY",
+      "GOOGLE_CLOUD_API_KEY": "Constants.expoConfig?.extra?.EXPO_PUBLIC_GOOGLE_CLOUD_API_KEY",
+      "EXPO_PUBLIC_API_BASE_URL": "Constants.expoConfig?.extra?.EXPO_PUBLIC_API_BASE_URL",
       "router": {},
       "eas": {
         "projectId": "51a1a865-99b4-4a64-b7b7-3726f0306ce3"

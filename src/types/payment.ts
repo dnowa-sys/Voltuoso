@@ -274,14 +274,4 @@ export interface PaymentAnalytics {
 }
 
 // Export all types for easy importing
-export type {
-    ChargingSession, ChargingSessionStatus, CreatePaymentIntentRequest,
-    CreatePaymentIntentResponse,
-    CreateSetupIntentRequest,
-    CreateSetupIntentResponse, PaymentAnalytics, PaymentError, PaymentMethod, PaymentMethodValidation, ProcessPaymentRequest,
-    ProcessPaymentResponse,
-    RefundRequest,
-    RefundResponse, RevenueSummary, SendReceiptRequest,
-    SendReceiptResponse, SessionUpdate, Station, StationAvailability, Subscription,
-    SubscriptionPlan, Transaction, TransactionFilters, TransactionStatus, User, UserRole, WebhookEvent, WebhookEventType
-};
+// (All interfaces and types are already exported above)
