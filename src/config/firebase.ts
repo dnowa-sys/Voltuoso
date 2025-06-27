@@ -1,33 +1,35 @@
-// src/config/firebase.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { initializeApp } from 'firebase/app';
-import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
+// src/config/firebase.ts - Proper React Native setup
+import { getAuth } from '@react-native-firebase/auth';
+import { getApps, initializeApp } from 'firebase/app';
+// import { getReactNativePersistence } from 'firebase/auth/react-native';
 import { getFirestore } from 'firebase/firestore';
-import { getFunctions } from 'firebase/functions';
 
 const firebaseConfig = {
-  // Your Firebase config object
-  apiKey: "FIREBASE_API_KEY",
-  authDomain: "FIREBASE_AUTH_DOMAIN",
-  projectId: "FIREBASE_PROJECT_ID",
-  storageBucket: "FIREBASE_STORAGE_BUCKET",
-  messagingSenderId: "FIREBASE_SENDER_ID",
-  appId: "FIREBASE_APP_ID",
+  apiKey: "AIzaSyCnBI7EleabBwbW6eN1M23tTWzJYhSrihA",
+  authDomain: "voltuoso-91370.firebaseapp.com",
+  projectId: "voltuoso-91370", 
+  storageBucket: "voltuoso-91370.firebasestorage.app",
+  messagingSenderId: "601405213922",
+  appId: "1:601405213922:ios:6930153889c4189133e2bb"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+console.log('🔥 Firebase initializing...');
 
-// Initialize Firebase Auth with AsyncStorage persistence
-const auth = initializeAuth(app, {
-  persistence: getReactNativePersistence(AsyncStorage)
-});
+// Initialize Firebase (prevent multiple initialization)
+let app;
+if (getApps().length === 0) {
+  app = initializeApp(firebaseConfig);
+} else {
+  app = getApps()[0];
+}
+
+// Initialize Firebase Auth for React Native
+const auth = getAuth();
 
 // Initialize Firestore
 const db = getFirestore(app);
 
-// Initialize Functions
-const functions = getFunctions(app);
+console.log('✅ Firebase initialized successfully');
 
-export { auth, db, functions };
+export { app, auth, db };
 export default app;
