@@ -12,9 +12,10 @@ import {
   updateDoc,
   where
 } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { db, functions } from '../config/firebase';
+import { getFunctions, httpsCallable } from 'firebase/functions';
+import { db } from '../config/firebase';
 import { ChargingSession, PaymentMethod, Transaction } from '../types/payment';
+const functions = getFunctions();
 
 const API_BASE_URL = Constants.expoConfig?.extra?.EXPO_PUBLIC_API_BASE_URL;
 
@@ -308,12 +309,20 @@ export const paymentService = {
         const data = doc.data();
         transactions.push({
           id: doc.id,
-          ...data,
-          // Convert Timestamps back to Dates
+          userId: data.userId,
+          stationId: data.stationId,
+          stationName: data.stationName,
+          amount: data.amount,
+          currency: data.currency,
+          paymentIntentId: data.paymentIntentId,
+          paymentMethodId: data.paymentMethodId,
+          status: data.status,
           createdAt: data.createdAt?.toDate() || new Date(),
           sessionStartTime: data.sessionStartTime?.toDate(),
           sessionEndTime: data.sessionEndTime?.toDate(),
+          receiptSent: data.receiptSent,
           receiptSentAt: data.receiptSentAt?.toDate(),
+          refunded: data.refunded,
           refundedAt: data.refundedAt?.toDate(),
         } as Transaction);
       });

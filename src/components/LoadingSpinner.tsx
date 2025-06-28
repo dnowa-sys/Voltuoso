@@ -1,21 +1,18 @@
-// src/components/LoadingSpinner.tsx - FIXED
 import React from 'react';
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
 
-interface LoadingSpinnerProps {
+interface Props {
   message?: string;
-  size?: 'small' | 'large';
 }
 
-export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
-  message = 'Loading...', 
-  size = 'large' 
-}) => (
-  <View style={styles.container}>
-    <ActivityIndicator size={size} color="#2ECC71" />
-    <Text style={styles.message}>{message}</Text>
-  </View>
-);
+export function LoadingSpinner({ message = "Loading..." }: Props) {
+  return (
+    <View style={styles.container}>
+      <ActivityIndicator size="large" color="#2ECC71" />
+      <Text style={styles.message}>{message}</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {

@@ -44,7 +44,9 @@
           "locationAlwaysPermission": "Allow Voltuoso to use your location to find nearby charging stations.",
           "locationWhenInUsePermission": "Allow Voltuoso to use your location to find nearby charging stations."
         }
-      ]
+      ],
+      "expo-maps",
+      "expo-web-browser"
     ],
     "ios": {
       "supportsTablet": true,
@@ -62,8 +64,8 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#2ECC71"
       },
-     "googleServicesFile": "./google-services.json",
-     "permissions": [
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION"
       ],

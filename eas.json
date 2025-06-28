@@ -19,7 +19,7 @@
       "EXPO_PUBLIC_FIREBASE_CLIENT_ID": "601405213922-dqe7kuaftencn1n3ge9qqfb4bqdiv6qg.apps.googleusercontent.com",
       "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "voltuoso-91370.firebaseapp.com",
       "EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY": "pk_test_51RX44gCs4k75ro6Lq4ZerrP8tXkmYc9Q4uBFFt2EYy9G239vFnwkqFWAVtuF2DX1Ivro0jqZ56ee3b5ofYpBfYfd00k0T2tf3S",
-      "EXPO_PUBLIC_API_BASE_URL": "https://api.voltuoso.app"
+      "EXPO_PUBLIC_API_BASE_URL": "https://voltuoso-api.fly.dev"
     },
     "ios": {
       "autoIncrement": true

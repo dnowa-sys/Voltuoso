@@ -1,7 +1,31 @@
-// src/config/firebase.ts
 import { initializeApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore'; // 🔥 Add this line
+import { initializeAuth, getAuth } from 'firebase/auth';
+import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
+let getReactNativePersistence: any;
+try {
+  const auth = require('firebase/auth');
+  getReactNativePersistence = auth.getReactNativePersistence;
+} catch (e) {
+  console.log('Using fallback persistence setup');
+}
+
+const validateConfig = () => {
+  const requiredVars = [
+    'EXPO_PUBLIC_FIREBASE_API_KEY',
+    'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN', 
+    'EXPO_PUBLIC_FIREBASE_PROJECT_ID'
+  ];
+  
+  for (const varName of requiredVars) {
+    if (!process.env[varName]) {
+      throw new Error(`Missing required environment variable: ${varName}`);
+    }
+  }
+};
+
+validateConfig();
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
@@ -15,7 +39,21 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app); // 🔥 Create the Firestore instance
 
-export { app, auth, db }; // 🚀 Export it
+let auth;
+try {
+  if (getReactNativePersistence) {
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } else {
+    auth = getAuth(app);
+  }
+} catch (error) {
+  console.log('Falling back to getAuth');
+  auth = getAuth(app);
+}
+
+const db = getFirestore(app);
+
+export { app, auth, db };

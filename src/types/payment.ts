@@ -92,6 +92,10 @@ export interface Station {
 
 // Extended User Type
 export interface User {
+  carType: string;
+  username: string;
+  lastName: string;
+  firstName: string;
   id: string;
   email: string;
   displayName?: string;
