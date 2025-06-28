@@ -1,11 +1,10 @@
-// metro.config.js
+// metro.config.js - FIX FOR EXPO 53 + FIREBASE
 const { getDefaultConfig } = require('@expo/metro-config');
 
-const config = getDefaultConfig(__dirname);
+const defaultConfig = getDefaultConfig(__dirname);
 
-// Add support for .cjs files
-config.resolver.sourceExts.push('cjs');
-// Add firebase and stripe to resolver
-config.resolver.assetExts.push('db');
+// Firebase compatibility fixes for Expo SDK 53
+defaultConfig.resolver.sourceExts.push('cjs');
+defaultConfig.resolver.unstable_enablePackageExports = false;
 
-module.exports = config;
+module.exports = defaultConfig;
