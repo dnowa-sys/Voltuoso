@@ -1,16 +1,19 @@
-// app/(app)/payment.tsx - SIMPLE VERSION
-import { StyleSheet, Text, View } from 'react-native';
+// app/(app)/payment.tsx - WITH STRIPE INTEGRATION
+import React from 'react';
+import { StyleSheet, View } from 'react-native';
+import { PaymentMethodsScreen } from '../../src/components/PaymentMethodsScreen';
 
 export default function PaymentScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Payment</Text>
-      <Text>Simple payment screen</Text>
+      <PaymentMethodsScreen />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  title: { fontSize: 24, fontWeight: 'bold', marginBottom: 20 },
+  container: { 
+    flex: 1,
+    paddingTop: 50, // Account for status bar
+  },
 });

@@ -1,4 +1,4 @@
-// src/context/AuthContext.tsx - HYBRID VERSION
+// src/context/AuthContext.tsx - ENHANCED ERROR HANDLING
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import {
   AuthUser,
@@ -20,7 +20,36 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 🚀 TOGGLE THIS FLAG TO SWITCH BETWEEN MOCK AND FIREBASE
-const USE_FIREBASE = true; // Set to true when ready to test Firebase
+const USE_FIREBASE = true; // Firebase mode enabled
+
+// Helper function to get user-friendly error messages
+const getErrorMessage = (error: any): string => {
+  const errorCode = error.code || error.message;
+  
+  switch (errorCode) {
+    case 'auth/network-request-failed':
+      return 'Network error. Please check your internet connection and try again.';
+    case 'auth/user-not-found':
+      return 'No account found with this email. Please sign up first.';
+    case 'auth/wrong-password':
+      return 'Incorrect password. Please try again.';
+    case 'auth/invalid-email':
+      return 'Please enter a valid email address.';
+    case 'auth/user-disabled':
+      return 'This account has been disabled. Please contact support.';
+    case 'auth/too-many-requests':
+      return 'Too many failed attempts. Please try again later.';
+    case 'auth/weak-password':
+      return 'Password should be at least 6 characters long.';
+    case 'auth/email-already-in-use':
+      return 'An account with this email already exists. Please sign in instead.';
+    case 'auth/operation-not-allowed':
+      return 'Email/password authentication is not enabled. Please contact support.';
+    default:
+      console.error('Auth error details:', error);
+      return error.message || 'An error occurred. Please try again.';
+  }
+};
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -58,15 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔥 Firebase sign in:', email);
         const user = await signInWithEmail(email, password);
         setUser(user);
+        console.log('✅ Sign in successful:', user.email);
       } else {
         console.log('🔥 Mock sign in:', email);
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         setUser({ email, id: 'mock-user-id' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Sign in error:', error);
-      throw error;
+      const friendlyMessage = getErrorMessage(error);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -79,15 +110,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔥 Firebase sign up:', email);
         const user = await createUserWithEmail(email, password);
         setUser(user);
+        console.log('✅ Sign up successful:', user.email);
       } else {
         console.log('🔥 Mock sign up:', email);
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         setUser({ email, id: 'mock-user-id' });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Sign up error:', error);
-      throw error;
+      const friendlyMessage = getErrorMessage(error);
+      throw new Error(friendlyMessage);
     } finally {
       setLoading(false);
     }
@@ -103,9 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('🔥 Mock sign out');
         setUser(null);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Sign out error:', error);
-      throw error;
+      const friendlyMessage = getErrorMessage(error);
+      throw new Error(friendlyMessage);
     }
   };
 
