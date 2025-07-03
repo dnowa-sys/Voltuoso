@@ -1,46 +1,117 @@
-// src/components/ChargingSessionPayment.tsx
+// src/components/ChargingSessionPayment.tsx - ENHANCED VERSION
 import { useStripe } from '@stripe/stripe-react-native';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { createPaymentIntent } from '../services/stripeService';
+import { useAuth } from '../context/AuthContext';
+import { shouldUseMockBackend } from '../services/stripeMockBackend';
+import { createCustomer, createPaymentIntent, getPaymentMethods } from '../services/stripeService';
 
 interface ChargingSessionPaymentProps {
   stationId: string;
   stationName: string;
+  stationAddress: string;
   estimatedCost: number;
-  onPaymentSuccess: (sessionId: string) => void;
+  pricePerKwh: number;
+  maxPower: number;
+  onPaymentSuccess: (sessionData: { sessionId: string; paymentIntentId: string }) => void;
   onPaymentCancel: () => void;
 }
 
 export function ChargingSessionPayment({
   stationId,
   stationName,
+  stationAddress,
   estimatedCost,
+  pricePerKwh,
+  maxPower,
   onPaymentSuccess,
   onPaymentCancel,
 }: ChargingSessionPaymentProps) {
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
+  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [paymentMethods, setPaymentMethods] = useState<any[]>([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<any>(null);
+  const [customerId, setCustomerId] = useState<string | null>(null);
 
-  const startChargingSession = async () => {
+  useEffect(() => {
+    if (user) {
+      setupCustomerAndPaymentMethods();
+    }
+  }, [user]);
+
+  const setupCustomerAndPaymentMethods = async () => {
+    try {
+      // Create customer if needed
+      const customer = await createCustomer(user?.email || '', user?.id || '');
+      setCustomerId(customer.id);
+
+      // Load existing payment methods
+      const methods = await getPaymentMethods(customer.id);
+      setPaymentMethods(methods);
+      
+      // Select first payment method as default
+      if (methods.length > 0) {
+        setSelectedPaymentMethod(methods[0]);
+      }
+    } catch (error) {
+      console.error('Setup failed:', error);
+    }
+  };
+
+  const startChargingSessionMock = async () => {
+    setLoading(true);
+    try {
+      // Simulate payment authorization
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      const sessionData = {
+        sessionId: `session_mock_${Date.now()}`,
+        paymentIntentId: `pi_mock_${Date.now()}`,
+        customerId: customerId || 'mock_customer',
+        stationId,
+        authorizedAmount: estimatedCost,
+      };
+
+      Alert.alert(
+        'Payment Authorized! 💳',
+        `Your payment of $${estimatedCost.toFixed(2)} has been authorized. Starting charging session...`,
+        [
+          {
+            text: 'Start Charging',
+            onPress: () => onPaymentSuccess(sessionData),
+          },
+        ]
+      );
+    } catch (error) {
+      console.error('Mock charging session error:', error);
+      Alert.alert('Error', 'Failed to start charging session');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startChargingSessionReal = async () => {
     setLoading(true);
     try {
       // Create payment intent for estimated amount
-      const clientSecret = await createPaymentIntent(estimatedCost);
+      const clientSecret = await createPaymentIntent(estimatedCost, 'usd');
 
       // Initialize payment sheet
       const { error: initError } = await initPaymentSheet({
         paymentIntentClientSecret: clientSecret,
         merchantDisplayName: 'Voltuoso',
+        returnURL: 'voltuoso://payment-return',
         defaultBillingDetails: {
-          name: 'EV Charging Session',
+          email: user?.email,
         },
       });
 
@@ -62,14 +133,21 @@ export function ChargingSessionPayment({
       }
 
       // Payment successful - start charging session
-      const sessionId = `session_${Date.now()}`;
+      const sessionData = {
+        sessionId: `session_${Date.now()}`,
+        paymentIntentId: clientSecret.split('_secret')[0],
+        customerId: customerId || '',
+        stationId,
+        authorizedAmount: estimatedCost,
+      };
+
       Alert.alert(
-        'Payment Authorized',
-        'Your payment has been authorized. Charging session is starting...',
+        'Payment Authorized! 💳',
+        'Your payment has been authorized. Starting charging session...',
         [
           {
-            text: 'OK',
-            onPress: () => onPaymentSuccess(sessionId),
+            text: 'Start Charging',
+            onPress: () => onPaymentSuccess(sessionData),
           },
         ]
       );
@@ -81,28 +159,72 @@ export function ChargingSessionPayment({
     }
   };
 
+  const startChargingSession = () => {
+    if (shouldUseMockBackend()) {
+      startChargingSessionMock();
+    } else {
+      startChargingSessionReal();
+    }
+  };
+
+  const estimatedDuration = Math.ceil((60 / maxPower) * 60); // Rough estimate
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Start Charging Session</Text>
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>Start Charging Session</Text>
+        <Text style={styles.subtitle}>Authorize payment to begin charging</Text>
+      </View>
       
-      <View style={styles.stationInfo}>
+      <View style={styles.stationCard}>
         <Text style={styles.stationName}>{stationName}</Text>
-        <Text style={styles.stationId}>Station ID: {stationId}</Text>
+        <Text style={styles.stationAddress}>{stationAddress}</Text>
+        
+        <View style={styles.stationDetails}>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Max Power</Text>
+            <Text style={styles.detailValue}>{maxPower} kW</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Price</Text>
+            <Text style={styles.detailValue}>${pricePerKwh}/kWh</Text>
+          </View>
+          <View style={styles.detailItem}>
+            <Text style={styles.detailLabel}>Est. Duration</Text>
+            <Text style={styles.detailValue}>{estimatedDuration}min</Text>
+          </View>
+        </View>
       </View>
 
-      <View style={styles.costInfo}>
-        <Text style={styles.costLabel}>Estimated Cost</Text>
+      <View style={styles.costCard}>
+        <Text style={styles.costTitle}>Estimated Cost</Text>
         <Text style={styles.costAmount}>${estimatedCost.toFixed(2)}</Text>
         <Text style={styles.costNote}>
-          Final amount will be based on actual kWh consumed
+          Final amount will be based on actual energy consumed
         </Text>
       </View>
 
-      <View style={styles.paymentInfo}>
-        <Text style={styles.paymentTitle}>Payment Authorization</Text>
-        <Text style={styles.paymentDescription}>
-          We'll authorize your payment method for the estimated amount. 
-          You'll only be charged for the actual energy consumed.
+      {paymentMethods.length > 0 && (
+        <View style={styles.paymentMethodCard}>
+          <Text style={styles.paymentMethodTitle}>Payment Method</Text>
+          <View style={styles.selectedMethod}>
+            <Text style={styles.methodText}>
+              {selectedPaymentMethod?.card?.brand?.toUpperCase()} ••••{selectedPaymentMethod?.card?.last4}
+            </Text>
+            <TouchableOpacity style={styles.changeButton}>
+              <Text style={styles.changeButtonText}>Change</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+
+      <View style={styles.termsCard}>
+        <Text style={styles.termsTitle}>How it works</Text>
+        <Text style={styles.termsText}>
+          • We'll authorize your payment method for the estimated amount{'\n'}
+          • You'll only be charged for actual energy consumed{'\n'}
+          • Payment will be processed when charging completes{'\n'}
+          • You can stop charging at any time
         </Text>
       </View>
 
@@ -123,54 +245,98 @@ export function ChargingSessionPayment({
           {loading ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text style={styles.startButtonText}>Authorize & Start</Text>
+            <Text style={styles.startButtonText}>
+              ⚡ Authorize & Start ({shouldUseMockBackend() ? 'Mock' : 'Real'})
+            </Text>
           )}
         </TouchableOpacity>
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
     padding: 20,
+    paddingTop: 60,
     backgroundColor: 'white',
+    alignItems: 'center',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#333',
-    textAlign: 'center',
-    marginBottom: 30,
+    marginBottom: 8,
   },
-  stationInfo: {
-    backgroundColor: '#f8f9fa',
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 20,
-  },
-  stationName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  stationId: {
+  subtitle: {
     fontSize: 14,
     color: '#666',
   },
-  costInfo: {
-    alignItems: 'center',
-    marginBottom: 30,
+  stationCard: {
+    backgroundColor: 'white',
+    margin: 20,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  costLabel: {
+  stationName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  stationAddress: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 16,
+  },
+  stationDetails: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  detailItem: {
+    alignItems: 'center',
+  },
+  detailLabel: {
+    fontSize: 12,
+    color: '#999',
+    textTransform: 'uppercase',
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#333',
+  },
+  costCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  costTitle: {
     fontSize: 16,
     color: '#666',
     marginBottom: 8,
   },
   costAmount: {
-    fontSize: 36,
+    fontSize: 32,
     fontWeight: 'bold',
     color: '#2ECC71',
     marginBottom: 8,
@@ -181,25 +347,67 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     maxWidth: 250,
   },
-  paymentInfo: {
-    backgroundColor: '#e8f5e8',
+  paymentMethodCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    padding: 20,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  paymentMethodTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12,
+  },
+  selectedMethod: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  methodText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+  },
+  changeButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#f0f0f0',
+  },
+  changeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2ECC71',
+  },
+  termsCard: {
+    backgroundColor: '#E8F5E8',
+    marginHorizontal: 20,
+    marginBottom: 20,
     padding: 16,
     borderRadius: 12,
-    marginBottom: 40,
   },
-  paymentTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  termsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
     color: '#2ECC71',
     marginBottom: 8,
   },
-  paymentDescription: {
-    fontSize: 14,
+  termsText: {
+    fontSize: 12,
     color: '#666',
-    lineHeight: 20,
+    lineHeight: 18,
   },
   actions: {
     flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingBottom: 40,
     gap: 12,
   },
   cancelButton: {
@@ -222,10 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     shadowColor: '#2ECC71',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 5,

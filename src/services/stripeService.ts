@@ -1,4 +1,4 @@
-// src/services/stripeService.ts
+// src/services/stripeService.ts - COMPLETE FIXED VERSION
 import { initStripe } from '@stripe/stripe-react-native';
 import { mockStripeBackend, shouldUseMockBackend } from './stripeMockBackend';
 
@@ -123,6 +123,38 @@ export const createSetupIntent = async (customerId: string) => {
   }
 };
 
+// Create ephemeral key for customer (required for payment sheet)
+export const createEphemeralKey = async (customerId: string) => {
+  try {
+    if (shouldUseMockBackend()) {
+      console.log('🔄 Using mock backend for ephemeral key');
+      const response = await mockStripeBackend.createEphemeralKey(customerId);
+      return response.secret;
+    }
+
+    // Real backend call
+    const response = await fetch(`${process.env.EXPO_PUBLIC_API_BASE_URL}/create-ephemeral-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        customer_id: customerId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to create ephemeral key');
+    }
+
+    const { secret } = await response.json();
+    return secret;
+  } catch (error) {
+    console.error('❌ Ephemeral key creation failed:', error);
+    throw error;
+  }
+};
+
 // Get payment methods for a customer
 export const getPaymentMethods = async (customerId: string) => {
   try {
@@ -187,4 +219,8 @@ export const createChargingSession = async (sessionData: {
   }
 };
 
-export { STRIPE_PUBLISHABLE_KEY };
+// Export all functions
+export {
+  createChargingSession, createCustomer, createEphemeralKey, createPaymentIntent, createSetupIntent,
+  getPaymentMethods, initializeStripe, STRIPE_PUBLISHABLE_KEY
+};

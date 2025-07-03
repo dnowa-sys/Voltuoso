@@ -1,6 +1,6 @@
 // src/types/payment.ts
+// Type definitions for payment-related data structures
 
-// Stripe Payment Method Types
 export interface PaymentMethod {
   id: string;
   type: 'card';
@@ -9,23 +9,14 @@ export interface PaymentMethod {
     last4: string;
     expMonth: number;
     expYear: number;
+    funding?: 'credit' | 'debit' | 'prepaid' | 'unknown';
+    country?: string;
   };
   isDefault: boolean;
+  customerId?: string;
+  created?: number;
 }
 
-// Transaction Status
-export type TransactionStatus = 'pending' | 'succeeded' | 'failed' | 'refunded';
-
-// Charging Session Status
-export type ChargingSessionStatus = 'authorized' | 'active' | 'completed' | 'cancelled' | 'error';
-
-// Station Availability
-export type StationAvailability = 'available' | 'in_use' | 'offline' | 'maintenance';
-
-// User Role Types
-export type UserRole = 'customer' | 'station_owner' | 'admin';
-
-// Transaction Record
 export interface Transaction {
   id: string;
   userId: string;
@@ -33,97 +24,125 @@ export interface Transaction {
   stationName: string;
   amount: number; // in cents
   currency: string;
-  status: TransactionStatus;
+  status: 'pending' | 'succeeded' | 'failed' | 'refunded' | 'canceled';
+  paymentIntentId: string;
   paymentMethodId: string;
-  paymentIntentId?: string;
   sessionStartTime?: Date;
   sessionEndTime?: Date;
   energyDelivered?: number; // kWh
   createdAt: Date;
   receiptSent: boolean;
-  refundId?: string;
+  receiptSentAt?: Date;
+  refunded?: boolean;
   refundedAt?: Date;
+  refundAmount?: number;
 }
 
-// Charging Session
 export interface ChargingSession {
   id: string;
   userId: string;
   stationId: string;
-  transactionId: string;
+  stationName?: string;
   paymentIntentId: string;
-  status: ChargingSessionStatus;
+  status: 'authorized' | 'active' | 'completed' | 'cancelled' | 'error';
   authorizedAmount: number; // in cents
   finalAmount?: number; // in cents
   startTime?: Date;
   endTime?: Date;
   energyDelivered: number; // kWh
-  currentPower?: number; // kW
+  powerDelivered?: number; // kW current rate
   createdAt: Date;
-  
-  // Hardware status
-  hardwareStatus?: 'connecting' | 'connected' | 'charging' | 'error';
   lastHeartbeat?: Date;
+  hardwareStatus?: string;
+  transactionId?: string;
+  errorMessage?: string;
 }
 
-// Station Information
 export interface Station {
   id: string;
   name: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-  ownerId: string;
-  ownerEmail: string;
-  isActive: boolean;
-  chargingSpeed: number; // kW
-  connectorType: string; // "CCS", "CHAdeMO", "Tesla", etc.
-  pricePerKwh: number; // in cents
-  availability: StationAvailability;
-  createdAt: Date;
-  
-  // Revenue sharing
-  platformFeePercentage: number; // Platform's cut (default: 30%)
-  
-  // Hardware integration
-  openEVSEId?: string;
-  apiEndpoint?: string;
+  location: {
+    latitude: number;
+    longitude: number;
+    address: string;
+    city: string;
+    state: string;
+    zipCode: string;
+  };
+  status: 'available' | 'in_use' | 'offline' | 'maintenance';
+  connectorType: 'ccs' | 'chademo' | 'tesla' | 'j1772';
+  maxPower: number; // kW
+  pricePerKwh: number; // USD per kWh
+  networkId?: string;
+  lastUpdated: Date;
+  amenities?: string[];
 }
 
-// Extended User Type
-export interface User {
-  carType: string;
-  username: string;
-  lastName: string;
-  firstName: string;
+export interface Customer {
   id: string;
   email: string;
-  displayName?: string;
-  photoURL?: string;
-  role: UserRole;
-  
-  // Payment-related fields
-  stripeCustomerId?: string;
+  userId: string;
   defaultPaymentMethodId?: string;
-  
-  // Station owner fields
-  stationIds?: string[];
-  
-  // Usage statistics
-  totalSpent?: number; // in cents
-  totalEnergyConsumed?: number; // kWh
-  membershipLevel?: 'basic' | 'premium';
-  
-  // Timestamps
-  createdAt: Date;
-  lastLoginAt?: Date;
+  created: Date;
+  metadata?: Record<string, string>;
 }
 
-// Payment Intent Creation
-export interface CreatePaymentIntentRequest {
-  stationId: string;
+export interface PaymentIntent {
+  id: string;
   amount: number; // in cents
+  currency: string;
+  status: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'requires_capture' | 'canceled' | 'succeeded';
+  clientSecret: string;
+  customerId?: string;
+  paymentMethodId?: string;
+  created: Date;
+  metadata?: Record<string, string>;
+}
+
+export interface SetupIntent {
+  id: string;
+  clientSecret: string;
+  customerId: string;
+  status: 'requires_payment_method' | 'requires_confirmation' | 'requires_action' | 'processing' | 'canceled' | 'succeeded';
+  paymentMethodId?: string;
+  created: Date;
+}
+
+// Stripe webhook event types
+export type WebhookEventType = 
+  | 'payment_intent.succeeded'
+  | 'payment_intent.payment_failed'
+  | 'payment_intent.canceled'
+  | 'setup_intent.succeeded'
+  | 'payment_method.attached'
+  | 'customer.created'
+  | 'invoice.payment_succeeded'
+  | 'invoice.payment_failed';
+
+export interface WebhookEvent {
+  id: string;
+  type: WebhookEventType;
+  data: {
+    object: any;
+  };
+  created: number;
+}
+
+// API response types
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
+}
+
+export interface CreatePaymentIntentRequest {
+  amount: number;
   currency?: string;
+  customerId?: string;
+  paymentMethodId?: string;
+  stationId: string;
+  metadata?: Record<string, string>;
 }
 
 export interface CreatePaymentIntentResponse {
@@ -131,151 +150,89 @@ export interface CreatePaymentIntentResponse {
   paymentIntentId: string;
 }
 
-// Setup Intent for Saving Payment Methods
-export interface CreateSetupIntentRequest {
+export interface CreateCustomerRequest {
+  email: string;
   userId: string;
+  metadata?: Record<string, string>;
+}
+
+export interface CreateCustomerResponse {
+  customer: Customer;
+}
+
+export interface CreateSetupIntentRequest {
+  customerId: string;
+  paymentMethodTypes?: string[];
 }
 
 export interface CreateSetupIntentResponse {
   clientSecret: string;
+  setupIntentId: string;
 }
 
-// Payment Processing
-export interface ProcessPaymentRequest {
-  clientSecret: string;
+// Charging session related types
+export interface StartChargingSessionRequest {
+  stationId: string;
   paymentMethodId?: string;
-  savePaymentMethod?: boolean;
+  estimatedAmount: number;
 }
 
-export interface ProcessPaymentResponse {
-  success: boolean;
-  paymentIntentId?: string;
-  error?: string;
-}
-
-// Refund Request
-export interface RefundRequest {
-  transactionId: string;
-  amount?: number; // Optional partial refund amount in cents
-  reason?: string;
-}
-
-export interface RefundResponse {
-  success: boolean;
-  refundId?: string;
-  error?: string;
-}
-
-// Receipt Email
-export interface SendReceiptRequest {
-  transactionId: string;
-}
-
-export interface SendReceiptResponse {
-  success: boolean;
-  error?: string;
-}
-
-// Transaction Filters
-export interface TransactionFilters {
-  status?: TransactionStatus;
-  stationId?: string;
-  startDate?: Date;
-  endDate?: Date;
-  minAmount?: number;
-  maxAmount?: number;
-}
-
-// Revenue Summary (for station owners)
-export interface RevenueSummary {
-  totalRevenue: number; // in cents
-  totalTransactions: number;
-  averageTransactionAmount: number; // in cents
-  totalEnergyDelivered: number; // kWh
-  period: {
-    startDate: Date;
-    endDate: Date;
-  };
-}
-
-// Real-time Session Updates
-export interface SessionUpdate {
+export interface StartChargingSessionResponse {
   sessionId: string;
-  energyDelivered: number; // kWh
+  paymentIntentId: string;
+  clientSecret: string;
+}
+
+export interface ChargingSessionUpdate {
+  energyDelivered?: number;
+  powerDelivered?: number;
+  status?: ChargingSession['status'];
+  hardwareStatus?: string;
+  errorMessage?: string;
+}
+
+// Hardware integration types
+export interface ChargerHardwareStatus {
+  connected: boolean;
+  charging: boolean;
+  errorCode?: string;
   currentPower?: number; // kW
-  estimatedTimeRemaining?: number; // minutes
-  estimatedFinalCost?: number; // in cents
-  timestamp: Date;
+  voltage?: number;
+  current?: number;
+  temperature?: number;
+  lastHeartbeat: Date;
 }
 
-// Payment Method Validation
-export interface PaymentMethodValidation {
-  isValid: boolean;
-  errors: string[];
+// Receipt and email types
+export interface ReceiptData {
+  transactionId: string;
+  sessionId: string;
+  customerEmail: string;
+  stationName: string;
+  sessionDuration: number; // minutes
+  energyDelivered: number; // kWh
+  amount: number; // in cents
+  currency: string;
+  sessionDate: Date;
+  receiptUrl?: string;
 }
 
-// Webhook Event Types
-export type WebhookEventType = 
-  | 'payment_intent.succeeded'
-  | 'payment_intent.payment_failed'
-  | 'setup_intent.succeeded'
-  | 'customer.subscription.created'
-  | 'customer.subscription.updated'
-  | 'customer.subscription.deleted';
-
-export interface WebhookEvent {
-  id: string;
-  type: WebhookEventType;
-  data: any;
-  createdAt: Date;
-}
-
-// Error Types
-export interface PaymentError {
-  code: string;
-  message: string;
-  type: 'card_error' | 'invalid_request_error' | 'api_error' | 'authentication_error' | 'rate_limit_error';
-  param?: string;
-}
-
-// Subscription Types (for future membership features)
-export interface Subscription {
-  id: string;
-  userId: string;
-  planId: string;
-  status: 'active' | 'canceled' | 'past_due' | 'unpaid';
-  currentPeriodStart: Date;
-  currentPeriodEnd: Date;
-  cancelAtPeriodEnd: boolean;
-  createdAt: Date;
-}
-
-export interface SubscriptionPlan {
-  id: string;
-  name: string;
-  description: string;
-  price: number; // in cents per month
-  features: string[];
-  isActive: boolean;
-}
-
-// Analytics Types
-export interface PaymentAnalytics {
-  totalVolume: number; // in cents
-  totalTransactions: number;
-  averageTransactionSize: number; // in cents
-  successRate: number; // percentage
-  topStations: {
-    stationId: string;
-    stationName: string;
-    revenue: number; // in cents
-    transactionCount: number;
-  }[];
+// Analytics and reporting types
+export interface SessionAnalytics {
+  totalSessions: number;
+  totalRevenue: number; // in cents
+  totalEnergyDelivered: number; // kWh
+  averageSessionDuration: number; // minutes
+  averageAmount: number; // in cents
   period: {
-    startDate: Date;
-    endDate: Date;
+    start: Date;
+    end: Date;
   };
 }
 
-// Export all types for easy importing
-// (All interfaces and types are already exported above)
+export interface StationAnalytics extends SessionAnalytics {
+  stationId: string;
+  utilizationRate: number; // percentage
+  revenue: number; // in cents
+  maintenanceEvents: number;
+}

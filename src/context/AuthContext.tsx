@@ -20,7 +20,8 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 🚀 TOGGLE THIS FLAG TO SWITCH BETWEEN MOCK AND FIREBASE
-const USE_FIREBASE = true; // Firebase mode enabled
+const USE_FIREBASE = true; // Keep Firebase enabled
+const FALLBACK_TO_MOCK_ON_NETWORK_ERROR = false; // Disable fallback now that network works
 
 // Helper function to get user-friendly error messages
 const getErrorMessage = (error: any): string => {
@@ -58,7 +59,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (USE_FIREBASE) {
       // Firebase Auth State Listener
-      console.log('🔥 Setting up Firebase auth state listener');
       const unsubscribe = onAuthStateChange((user) => {
         setUser(user);
         setLoading(false);
@@ -74,7 +74,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return unsubscribe;
     } else {
       // Mock mode - no persistent auth
-      console.log('🔥 Using mock auth mode');
       setLoading(false);
       return undefined;
     }
@@ -84,18 +83,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       if (USE_FIREBASE) {
-        console.log('🔥 Firebase sign in:', email);
         const user = await signInWithEmail(email, password);
         setUser(user);
-        console.log('✅ Sign in successful:', user.email);
       } else {
-        console.log('🔥 Mock sign in:', email);
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         setUser({ email, id: 'mock-user-id' });
       }
     } catch (error: any) {
       console.error('❌ Sign in error:', error);
+      
+      // Fallback to mock auth on network errors (disabled for now)
+      if (FALLBACK_TO_MOCK_ON_NETWORK_ERROR && error.code === 'auth/network-request-failed') {
+        console.log('🔄 Network error detected, falling back to mock auth for testing');
+        setUser({ email, id: 'mock-user-id-network-fallback' });
+        setLoading(false);
+        return;
+      }
+      
       const friendlyMessage = getErrorMessage(error);
       throw new Error(friendlyMessage);
     } finally {
@@ -107,18 +112,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setLoading(true);
     try {
       if (USE_FIREBASE) {
-        console.log('🔥 Firebase sign up:', email);
         const user = await createUserWithEmail(email, password);
         setUser(user);
-        console.log('✅ Sign up successful:', user.email);
       } else {
-        console.log('🔥 Mock sign up:', email);
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
         setUser({ email, id: 'mock-user-id' });
       }
     } catch (error: any) {
       console.error('❌ Sign up error:', error);
+      
+      // NEW: Fallback to mock auth on network errors
+      if (FALLBACK_TO_MOCK_ON_NETWORK_ERROR && error.code === 'auth/network-request-failed') {
+        console.log('🔄 Network error detected, falling back to mock auth for testing');
+        setUser({ email, id: 'mock-user-id-network-fallback' });
+        setLoading(false);
+        return;
+      }
+      
       const friendlyMessage = getErrorMessage(error);
       throw new Error(friendlyMessage);
     } finally {
@@ -128,12 +139,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
-      if (USE_FIREBASE) {
-        console.log('🔥 Firebase sign out');
+      if (USE_FIREBASE && user?.id !== 'mock-user-id-network-fallback') {
         await firebaseSignOut();
         // User will be set to null by the auth state listener
       } else {
-        console.log('🔥 Mock sign out');
         setUser(null);
       }
     } catch (error: any) {
@@ -150,9 +159,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     signOut,
   };
-
-  console.log('🔥 AuthProvider render - Mode:', USE_FIREBASE ? 'Firebase' : 'Mock', 
-              'User:', user?.email || 'None', 'Loading:', loading);
 
   return (
     <AuthContext.Provider value={contextValue}>

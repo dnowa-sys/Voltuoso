@@ -1,17 +1,18 @@
-// src/components/PaymentMethodsScreen.tsx
+// src/components/PaymentMethodsScreen.tsx - SIMPLIFIED WITH MOCK BYPASS
 import { useStripe } from '@stripe/stripe-react-native';
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
-import { createCustomer, createSetupIntent } from '../services/stripeService';
+import { shouldUseMockBackend } from '../services/stripeMockBackend';
+import { createCustomer, createEphemeralKey, createSetupIntent } from '../services/stripeService';
 
 interface PaymentMethod {
   id: string;
@@ -52,8 +53,7 @@ export function PaymentMethodsScreen() {
   };
 
   const loadPaymentMethods = async () => {
-    // This would load payment methods from your backend
-    // For now, we'll use mock data
+    // Load existing payment methods
     const mockMethods: PaymentMethod[] = [
       {
         id: 'pm_1234',
@@ -70,7 +70,35 @@ export function PaymentMethodsScreen() {
     setPaymentMethods(mockMethods);
   };
 
-  const addPaymentMethod = async () => {
+  const addPaymentMethodMock = async () => {
+    // Simulate adding a payment method in mock mode
+    setLoading(true);
+    
+    try {
+      await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate network delay
+      
+      const newPaymentMethod: PaymentMethod = {
+        id: `pm_mock_${Date.now()}`,
+        type: 'card',
+        card: {
+          brand: 'visa',
+          last4: '4242',
+          exp_month: 12,
+          exp_year: 2026,
+        },
+        isDefault: false,
+      };
+      
+      setPaymentMethods(prev => [...prev, newPaymentMethod]);
+      Alert.alert('Success', 'Mock payment method added successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to add mock payment method');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const addPaymentMethodReal = async () => {
     if (!customerId) {
       Alert.alert('Error', 'Customer not set up. Please try again.');
       return;
@@ -79,15 +107,19 @@ export function PaymentMethodsScreen() {
     setLoading(true);
     try {
       // Create setup intent for saving payment method
-      const clientSecret = await createSetupIntent(customerId);
+      const setupIntentSecret = await createSetupIntent(customerId);
+      
+      // Create ephemeral key for customer
+      const ephemeralKeySecret = await createEphemeralKey(customerId);
 
-      // Initialize payment sheet
+      // Initialize payment sheet with CORRECTED parameters
       const { error: initError } = await initPaymentSheet({
-        paymentIntentClientSecret: clientSecret,
+        setupIntentClientSecret: setupIntentSecret,
         merchantDisplayName: 'Voltuoso',
         customerId,
-        customerEphemeralKeySecret: clientSecret, // In real app, get from backend
+        customerEphemeralKeySecret: ephemeralKeySecret,
         allowsDelayedPaymentMethods: true,
+        returnURL: 'voltuoso://payment-return',
         defaultBillingDetails: {
           email: user?.email,
         },
@@ -121,6 +153,16 @@ export function PaymentMethodsScreen() {
     }
   };
 
+  const addPaymentMethod = () => {
+    if (shouldUseMockBackend()) {
+      console.log('🔄 Using mock payment method addition');
+      addPaymentMethodMock();
+    } else {
+      console.log('🔄 Using real Stripe payment method addition');
+      addPaymentMethodReal();
+    }
+  };
+
   const removePaymentMethod = (methodId: string) => {
     Alert.alert(
       'Remove Payment Method',
@@ -131,7 +173,6 @@ export function PaymentMethodsScreen() {
           text: 'Remove',
           style: 'destructive',
           onPress: () => {
-            // In real app, call backend to remove payment method
             setPaymentMethods(prev => prev.filter(method => method.id !== methodId));
           },
         },
@@ -151,7 +192,12 @@ export function PaymentMethodsScreen() {
   return (
     <ScrollView style={styles.container}>
       <Text style={styles.title}>Payment Methods</Text>
-      <Text style={styles.subtitle}>Manage your payment methods for charging sessions</Text>
+      <Text style={styles.subtitle}>
+        Manage your payment methods for charging sessions
+        {shouldUseMockBackend() && (
+          <Text style={styles.mockIndicator}> (Mock Mode)</Text>
+        )}
+      </Text>
 
       {paymentMethods.length === 0 ? (
         <View style={styles.emptyState}>
@@ -207,7 +253,9 @@ export function PaymentMethodsScreen() {
         {loading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text style={styles.addButtonText}>Add Payment Method</Text>
+          <Text style={styles.addButtonText}>
+            {shouldUseMockBackend() ? 'Add Mock Payment Method' : 'Add Payment Method'}
+          </Text>
         )}
       </TouchableOpacity>
     </ScrollView>
@@ -230,6 +278,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     marginBottom: 30,
+  },
+  mockIndicator: {
+    color: '#F39C12',
+    fontWeight: 'bold',
   },
   emptyState: {
     alignItems: 'center',

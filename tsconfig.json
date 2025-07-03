@@ -6,22 +6,31 @@
       "esnext",
       "dom"
     ],
-    "baseUrl": ".", 
-   "paths": {
+    "baseUrl": ".",
+    "paths": {
       "firebase/auth": [
         "node_modules/@firebase/auth/dist/index.rn.d.ts"
       ],
-       "expo-router": ["node_modules/expo-router"]
+      "expo-router": [
+        "node_modules/expo-router"
+      ]
     }
   },
-    "allowJs": true,
-    "skipLibCheck": true,
-    "jsx": "react-native",
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "resolveJsonModule": true,
-   "include": ["**/*.ts","**/*.tsx","firebase-auth-react-native.d.ts","firebase.tsx"],
+  "allowJs": true,
+  "skipLibCheck": true,
+  "jsx": "react-native",
+  "moduleResolution": "node",
+  "esModuleInterop": true,
+  "strict": true,
+  "forceConsistentCasingInFileNames": true,
+  "noEmit": true,
+  "resolveJsonModule": true,
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    "firebase-auth-react-native.d.ts",
+    "firebase.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }
