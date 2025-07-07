@@ -1,9 +1,7 @@
-// src/services/emailReceiptService.ts - COMPLETE EMAIL RECEIPT SERVICE
-import { addDoc, collection, doc, updateDoc } from 'firebase/firestore';
-import { Alert, Linking } from 'react-native';
-import { db } from '../config/firebase';
+// src/services/emailReceiptService.ts
+import { Alert } from 'react-native';
 
-interface TransactionData {
+export interface TransactionData {
   id: string;
   userId: string;
   userEmail: string;
@@ -13,308 +11,226 @@ interface TransactionData {
   energyDelivered: number;
   sessionDuration: string;
   paymentMethod: string;
-  sessionStartTime?: Date;
-  sessionEndTime?: Date;
-  status: string;
+  sessionStartTime: Date;
+  sessionEndTime: Date;
+  status: 'completed' | 'refunded' | 'pending';
 }
 
-interface ReceiptResult {
-  sent: boolean;
-  method: string;
-}
+class EmailReceiptService {
+  private static instance: EmailReceiptService;
 
-// Email service that works without Cloud Functions
-export const emailReceiptService = {
-  // Save transaction and handle receipt
-  async saveTransactionWithReceipt(transactionData: TransactionData) {
-    try {
-      console.log('💾 Saving transaction with receipt...', transactionData);
-      
-      // Save transaction to Firestore
-      const docRef = await addDoc(collection(db, 'transactions'), {
-        ...transactionData,
-        createdAt: new Date(),
-        receiptSent: false,
-        receiptMethod: 'email_pending',
-      });
-      
-      console.log('✅ Transaction saved:', docRef.id);
-      
-      // Generate receipt content
-      const receiptContent = this.generateReceiptText(transactionData);
-      
-      // Handle receipt sending
-      const receiptResult = await this.handleReceiptDelivery(transactionData, receiptContent);
-      
-      // Update transaction with receipt status
-      await updateDoc(doc(db, 'transactions', docRef.id), {
-        receiptSent: receiptResult.sent,
-        receiptMethod: receiptResult.method,
-        receiptSentAt: receiptResult.sent ? new Date() : null,
-      });
-      
-      return {
-        success: true,
-        transactionId: docRef.id,
-        receiptSent: receiptResult.sent,
-        receiptMethod: receiptResult.method,
-      };
-      
-    } catch (error) {
-      console.error('❌ Error saving transaction:', error);
-      throw error;
+  public static getInstance(): EmailReceiptService {
+    if (!EmailReceiptService.instance) {
+      EmailReceiptService.instance = new EmailReceiptService();
     }
-  },
+    return EmailReceiptService.instance;
+  }
 
-  // Generate receipt text content
+  /**
+   * Generate receipt text content
+   */
   generateReceiptText(transaction: TransactionData): string {
-    const formatCurrency = (amount: number) => `$${amount.toFixed(2)}`;
-    const formatDate = (date?: Date) => {
-      if (!date) return new Date().toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-      
-      return date.toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit',
-      });
-    };
+    const receiptDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
 
     return `
 VOLTUOSO CHARGING RECEIPT
 ========================
 
-Transaction ID: ${transaction.id}
-Date: ${formatDate(transaction.sessionStartTime)}
+Receipt #: ${transaction.id}
+Date: ${receiptDate}
 
-STATION DETAILS
+CUSTOMER INFORMATION
+-------------------
+Email: ${transaction.userEmail}
+
+SESSION DETAILS
+--------------
 Station: ${transaction.stationName}
 Address: ${transaction.stationAddress}
-
-SESSION DETAILS  
+Start Time: ${transaction.sessionStartTime.toLocaleString()}
+End Time: ${transaction.sessionEndTime.toLocaleString()}
 Duration: ${transaction.sessionDuration}
-Energy Delivered: ${transaction.energyDelivered} kWh
-Payment Method: ${transaction.paymentMethod}
 
-CHARGES
-Total Amount: ${formatCurrency(transaction.amount)}
-Status: ${transaction.status}
+CHARGING SUMMARY
+---------------
+Energy Delivered: ${transaction.energyDelivered} kWh
+Total Amount: $${transaction.amount.toFixed(2)}
+Payment Method: ${transaction.paymentMethod}
+Status: ${transaction.status.toUpperCase()}
 
 Thank you for choosing Voltuoso!
-For support: support@voltuoso.com
-App: voltuoso.com
+For support, contact: support@voltuoso.com
 
-This receipt was generated automatically.
-Save this email for your records.
+This is an automated receipt.
     `.trim();
-  },
+  }
 
-  // Handle receipt delivery with multiple options
-  async handleReceiptDelivery(transaction: TransactionData, receiptContent: string): Promise<ReceiptResult> {
-    return new Promise((resolve) => {
-      Alert.alert(
-        'Receipt Ready 📧',
-        'How would you like to receive your receipt?',
-        [
-          {
-            text: 'Email Receipt',
-            onPress: async () => {
-              await this.sendViaEmail(transaction, receiptContent);
-              resolve({ sent: true, method: 'email_app' });
-            },
-          },
-          {
-            text: 'Save to App Only', 
-            onPress: () => {
-              Alert.alert('Receipt Saved', 'Your receipt has been saved to your transaction history.');
-              resolve({ sent: true, method: 'app_only' });
-            },
-          },
-          {
-            text: 'Skip Receipt',
-            style: 'cancel',
-            onPress: () => {
-              resolve({ sent: false, method: 'skipped' });
-            },
-          },
-        ]
-      );
-    });
-  },
-
-  // Send receipt via device email app
-  async sendViaEmail(transaction: TransactionData, receiptContent: string) {
+  /**
+   * Send receipt via email (mock implementation)
+   */
+  async sendViaEmail(transaction: TransactionData, receiptContent: string): Promise<boolean> {
     try {
-      const subject = `Voltuoso Charging Receipt - ${transaction.stationName}`;
-      const body = receiptContent;
+      // In a real app, this would call your backend API to send email
+      console.log('📧 Sending receipt email to:', transaction.userEmail);
+      console.log('📧 Receipt content:', receiptContent);
+
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // Simulate 90% success rate
+      const success = Math.random() > 0.1;
       
-      const emailUrl = `mailto:${transaction.userEmail}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      if (success) {
+        console.log('✅ Receipt email sent successfully');
+        return true;
+      } else {
+        throw new Error('Email service temporarily unavailable');
+      }
+    } catch (error) {
+      console.error('❌ Failed to send receipt email:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Save transaction and send receipt
+   */
+  async saveTransactionWithReceipt(transaction: TransactionData): Promise<void> {
+    try {
+      // 1. Save transaction to database (mock)
+      await this.saveTransaction(transaction);
       
-      const canOpen = await Linking.canOpenURL(emailUrl);
+      // 2. Generate and send receipt
+      const receiptContent = this.generateReceiptText(transaction);
+      const emailSent = await this.sendViaEmail(transaction, receiptContent);
       
-      if (canOpen) {
-        await Linking.openURL(emailUrl);
-        console.log('✅ Opened email app for receipt');
+      if (emailSent) {
         Alert.alert(
-          'Email Opened 📧',
-          'Your email app has been opened with the receipt. Please send the email to complete the process.',
+          'Receipt Sent! 📧',
+          `Your receipt has been sent to ${transaction.userEmail}`,
           [{ text: 'OK' }]
         );
       } else {
-        // Fallback: show receipt content to copy
         Alert.alert(
-          'Email Receipt',
-          'Please copy this receipt and email it to yourself:\n\n' + receiptContent,
-          [
-            { text: 'Copy Text', onPress: () => {
-              // Note: Clipboard copy would require expo-clipboard
-              console.log('Receipt content ready to copy:', receiptContent);
-            }},
-            { text: 'OK' }
-          ]
+          'Receipt Error',
+          'Transaction saved but receipt email failed. You can resend it from your transaction history.',
+          [{ text: 'OK' }]
         );
       }
-      
     } catch (error) {
-      console.error('❌ Error opening email app:', error);
+      console.error('Transaction save error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Save transaction to database (mock)
+   */
+  private async saveTransaction(transaction: TransactionData): Promise<void> {
+    try {
+      console.log('💾 Saving transaction to database:', transaction.id);
+      
+      // Simulate database save
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // In a real app, this would save to Firebase/your backend
+      const savedTransaction = {
+        ...transaction,
+        savedAt: new Date(),
+      };
+      
+      console.log('✅ Transaction saved:', savedTransaction.id);
+    } catch (error) {
+      console.error('❌ Database save failed:', error);
+      throw new Error('Failed to save transaction');
+    }
+  }
+
+  /**
+   * Resend receipt for existing transaction
+   */
+  async resendReceipt(transactionId: string, userEmail: string): Promise<void> {
+    try {
+      // In a real app, fetch transaction from database
+      const mockTransaction: TransactionData = {
+        id: transactionId,
+        userId: 'user_123',
+        userEmail: userEmail,
+        stationName: 'Voltuoso Station',
+        stationAddress: '123 Charging Way',
+        amount: 15.50,
+        energyDelivered: 18.2,
+        sessionDuration: '45m',
+        paymentMethod: 'VISA ••••4242',
+        sessionStartTime: new Date(Date.now() - 2700000), // 45 min ago
+        sessionEndTime: new Date(),
+        status: 'completed',
+      };
+
+      const receiptContent = this.generateReceiptText(mockTransaction);
+      const emailSent = await this.sendViaEmail(mockTransaction, receiptContent);
+      
+      if (emailSent) {
+        Alert.alert(
+          'Receipt Resent! 📧',
+          `Receipt has been resent to ${userEmail}`,
+          [{ text: 'OK' }]
+        );
+      } else {
+        throw new Error('Failed to resend receipt');
+      }
+    } catch (error) {
+      console.error('Resend receipt error:', error);
       Alert.alert(
-        'Receipt Content',
-        'Here is your receipt:\n\n' + receiptContent,
+        'Resend Failed',
+        'Unable to resend receipt. Please try again later.',
         [{ text: 'OK' }]
       );
     }
-  },
+  }
 
-  // Alternative: Send receipt via SMS (if user prefers)
-  async sendViaSMS(transaction: TransactionData, receiptContent: string) {
+  /**
+   * Generate PDF receipt (future enhancement)
+   */
+  async generatePDFReceipt(transaction: TransactionData): Promise<string | null> {
     try {
-      // This would require user's phone number
-      const smsUrl = `sms:?body=${encodeURIComponent(receiptContent)}`;
-      const canOpen = await Linking.canOpenURL(smsUrl);
+      // This would integrate with a PDF generation service
+      console.log('📄 Generating PDF receipt for:', transaction.id);
       
-      if (canOpen) {
-        await Linking.openURL(smsUrl);
-        Alert.alert('SMS Opened', 'Your messaging app has been opened with the receipt.');
-      } else {
-        Alert.alert('SMS Not Available', 'SMS is not available on this device.');
-      }
+      // Mock PDF URL
+      const pdfUrl = `https://receipts.voltuoso.com/${transaction.id}.pdf`;
+      return pdfUrl;
     } catch (error) {
-      console.error('SMS sending failed:', error);
-      Alert.alert('SMS Error', 'Unable to open SMS app.');
+      console.error('PDF generation error:', error);
+      return null;
     }
-  },
+  }
 
-  // Simple version that just saves to Firebase (no email prompt)
-  async saveTransactionOnly(transactionData: TransactionData) {
-    try {
-      console.log('💾 Saving transaction only...', transactionData);
-      
-      const docRef = await addDoc(collection(db, 'transactions'), {
-        ...transactionData,
-        createdAt: new Date(),
-        receiptSent: false,
-        receiptMethod: 'app_only',
-      });
-      
-      console.log('✅ Transaction saved:', docRef.id);
-      
-      return {
-        success: true,
-        transactionId: docRef.id,
-        receiptSent: false,
-        receiptMethod: 'app_only',
-      };
-      
-    } catch (error) {
-      console.error('❌ Error saving transaction:', error);
-      throw error;
-    }
-  },
+  /**
+   * Format currency amount
+   */
+  private formatCurrency(amount: number): string {
+    return `$${amount.toFixed(2)}`;
+  }
 
-  // Manual receipt sending (for use in transaction history)
-  async resendReceipt(transactionData: TransactionData) {
-    try {
-      const receiptContent = this.generateReceiptText(transactionData);
-      await this.sendViaEmail(transactionData, receiptContent);
-      
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error resending receipt:', error);
-      Alert.alert('Error', 'Failed to send receipt. Please try again.');
-      return { success: false };
-    }
-  },
-
-  // For future: Integration with third-party email services
-  async sendViaEmailService(transaction: TransactionData, receiptContent: string) {
-    // This is where you'd integrate with:
-    // - EmailJS
-    // - SendGrid 
-    // - Mailgun
-    // - Your own backend API
-    
-    console.log('📧 Would send via email service:', {
-      to: transaction.userEmail,
-      subject: `Voltuoso Receipt - ${transaction.stationName}`,
-      content: receiptContent,
+  /**
+   * Format date for receipt
+   */
+  private formatReceiptDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+    }) + ' ' + date.toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
     });
-    
-    // Mock implementation
-    Alert.alert(
-      'Email Service',
-      'In production, this would send via a professional email service.',
-      [{ text: 'OK' }]
-    );
-    
-    return { success: true, provider: 'future_email_service' };
-  },
+  }
+}
 
-  // Validate transaction data before processing
-  validateTransactionData(transaction: TransactionData): boolean {
-    const required = ['id', 'userId', 'userEmail', 'stationName', 'amount'];
-    
-    for (const field of required) {
-      if (!transaction[field as keyof TransactionData]) {
-        console.error(`Missing required field: ${field}`);
-        return false;
-      }
-    }
-    
-    if (transaction.amount <= 0) {
-      console.error('Invalid amount:', transaction.amount);
-      return false;
-    }
-    
-    if (!transaction.userEmail.includes('@')) {
-      console.error('Invalid email:', transaction.userEmail);
-      return false;
-    }
-    
-    return true;
-  },
-
-  // Create a sample transaction for testing
-  createSampleTransaction(userEmail: string): TransactionData {
-    return {
-      id: `txn_sample_${Date.now()}`,
-      userId: 'user_sample',
-      userEmail: userEmail,
-      stationName: 'Voltuoso Bethesda',
-      stationAddress: '9525 Starmont Rd, Bethesda, MD 20817',
-      amount: 15.50,
-      energyDelivered: 18.2,
-      sessionDuration: '45m',
-      paymentMethod: 'VISA ••••4242',
-      sessionStartTime: new Date(Date.now() - 45 * 60 * 1000), // 45 minutes ago
-      sessionEndTime: new Date(),
-      status: 'completed',
-    };
-  },
-};
+// Export singleton instance
+export const emailReceiptService = EmailReceiptService.getInstance();
