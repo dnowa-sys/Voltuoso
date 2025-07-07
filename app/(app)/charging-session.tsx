@@ -1,10 +1,11 @@
-// app/(app)/charging-session.tsx - ENHANCED WITH REAL PAYMENT FLOW
+// app/(app)/charging-session.tsx - FIXED VERSION
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { ActiveChargingSession } from '../../src/components/ActiveChargingSession';
 import { ChargingSessionPayment } from '../../src/components/ChargingSessionPayment';
 import { useAuth } from '../../src/context/AuthContext';
+import { emailReceiptService } from '../../src/services/emailReceiptService';
 
 export default function ChargingSessionScreen() {
   const { user } = useAuth();
@@ -62,8 +63,34 @@ export default function ChargingSessionScreen() {
     );
   };
 
-  const handleSessionComplete = (completedSession: any) => {
+  const handleSessionComplete = async (completedSession: any) => {
     console.log('⚡ Charging session completed:', completedSession);
+    
+    // Create transaction data for receipt
+    const transactionData = {
+      id: `txn_${Date.now()}`,
+      userId: user?.id || '',
+      userEmail: user?.email || '',
+      stationName: completedSession.stationName,
+      stationAddress: completedSession.stationAddress || stationInfo.address,
+      amount: parseFloat(completedSession.finalCost || '5.10'),
+      energyDelivered: parseFloat(completedSession.energyDelivered || '18.2'),
+      sessionDuration: completedSession.duration || '45m',
+      paymentMethod: 'VISA ••••4242',
+      sessionStartTime: completedSession.startTime,
+      sessionEndTime: new Date(),
+      status: 'completed',
+    };
+
+    try {
+      // Save transaction and handle receipt
+      await emailReceiptService.saveTransactionWithReceipt(transactionData);
+      console.log('✅ Transaction and receipt handled');
+    } catch (error) {
+      console.error('❌ Error handling transaction:', error);
+      Alert.alert('Transaction Error', 'Failed to save transaction. Please contact support.');
+    }
+    
     setCurrentSession(completedSession);
     setSessionState('completed');
   };
@@ -77,6 +104,33 @@ export default function ChargingSessionScreen() {
       pathname: '/(app)/transaction-history',
       params: { highlightTransaction: currentSession?.id }
     });
+  };
+
+  const handleGetReceipt = async () => {
+    if (!currentSession) return;
+    
+    const transactionData = {
+      id: currentSession.id,
+      userId: user?.id || '',
+      userEmail: user?.email || '',
+      stationName: currentSession.stationName,
+      stationAddress: currentSession.stationAddress || stationInfo.address,
+      amount: parseFloat(currentSession.finalCost || '5.10'),
+      energyDelivered: parseFloat(currentSession.energyDelivered || '18.2'),
+      sessionDuration: currentSession.duration || '45m',
+      paymentMethod: 'VISA ••••4242',
+      sessionStartTime: currentSession.startTime,
+      sessionEndTime: new Date(),
+      status: 'completed',
+    };
+
+    try {
+      const receiptContent = emailReceiptService.generateReceiptText(transactionData);
+      await emailReceiptService.sendViaEmail(transactionData, receiptContent);
+    } catch (error) {
+      console.error('❌ Error sending receipt:', error);
+      Alert.alert('Receipt Error', 'Failed to send receipt. Please try again.');
+    }
   };
 
   if (sessionState === 'payment') {
@@ -151,9 +205,16 @@ export default function ChargingSessionScreen() {
         <View style={styles.actionButtons}>
           <TouchableOpacity
             style={styles.receiptButton}
+            onPress={handleGetReceipt}
+          >
+            <Text style={styles.receiptButtonText}>📧 Email Receipt</Text>
+          </TouchableOpacity>
+          
+          <TouchableOpacity
+            style={styles.secondaryButton}
             onPress={handleViewReceipt}
           >
-            <Text style={styles.receiptButtonText}>📧 View Receipt</Text>
+            <Text style={styles.secondaryButtonText}>📋 View in History</Text>
           </TouchableOpacity>
           
           <TouchableOpacity
@@ -250,6 +311,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   receiptButton: {
+    backgroundColor: '#2ECC71',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  receiptButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  secondaryButton: {
     backgroundColor: '#F8F9FA',
     borderWidth: 1,
     borderColor: '#2ECC71',
@@ -257,13 +329,13 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
   },
-  receiptButtonText: {
+  secondaryButtonText: {
     color: '#2ECC71',
     fontSize: 16,
     fontWeight: '600',
   },
   homeButton: {
-    backgroundColor: '#2ECC71',
+    backgroundColor: '#6C757D',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
