@@ -16,6 +16,7 @@ import { FilterPanel, FilterState } from '../../src/components/FilterPanel';
 import { SearchResultsList } from '../../src/components/SearchResultsList';
 import { useAuth } from '../../src/context/AuthContext';
 import { LocationData, locationService } from '../../src/services/locationService';
+import { poiService } from '../../src/services/poiService';
 import { SearchResult, searchService } from '../../src/services/searchService';
 
 const { width, height } = Dimensions.get('window');
@@ -93,6 +94,7 @@ export default function MapHomeScreen() {
     availability: 'all',
     chargingSpeed: 'all',
     maxDistance: 25,
+    nearbyActivities: [],
   });
   const [mapRegion, setMapRegion] = useState<Region>({
     latitude: 38.9072, // Washington DC area
@@ -339,15 +341,23 @@ export default function MapHomeScreen() {
     });
   };
 
-  const activeFilterCount = Object.values(filters).filter(value => 
-    value !== 'all' && value !== 25
-  ).length;
+  const activeFilterCount = Object.values(filters).filter(value => {
+    if (Array.isArray(value)) {
+      return value.length > 0;
+    }
+    return value !== 'all' && value !== 25;
+  }).length;
 
   const getLocationSubtitle = () => {
-    if (currentSearchLocation) {
-      return `${filteredStations.length} station${filteredStations.length !== 1 ? 's' : ''} near search location`;
+    const stationText = `${filteredStations.length} station${filteredStations.length !== 1 ? 's' : ''}`;
+    const locationText = currentSearchLocation ? 'near search location' : 'nearby';
+    const activitiesCount = filters.nearbyActivities?.length || 0;
+    
+    if (activitiesCount > 0) {
+      return `${stationText} ${locationText} • ${activitiesCount} activities selected`;
     }
-    return `${filteredStations.length} station${filteredStations.length !== 1 ? 's' : ''} nearby`;
+    
+    return `${stationText} ${locationText}`;
   };
 
   return (
@@ -423,7 +433,7 @@ export default function MapHomeScreen() {
         style={[styles.filterButton, activeFilterCount > 0 && styles.filterButtonActive]}
         onPress={() => setShowFilters(true)}
       >
-        <Text style={styles.filterIcon}>⚙️</Text>
+        <Text style={styles.filterIcon}>☰</Text>
         {activeFilterCount > 0 && (
           <View style={styles.filterBadge}>
             <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -439,6 +449,27 @@ export default function MapHomeScreen() {
       >
         <Text style={styles.floatingLocationIcon}>📍</Text>
       </TouchableOpacity>
+
+      {/* Activities Indicator */}
+      {filters.nearbyActivities && filters.nearbyActivities.length > 0 && (
+        <View style={[
+          styles.activitiesIndicator,
+          currentSearchLocation ? { top: 280 } : { top: 240 }
+        ]}>
+          <Text style={styles.activitiesText}>
+            🎯 Looking for stations near: {filters.nearbyActivities.map(activityId => {
+              const activityInfo = poiService.getActivityInfo(activityId);
+              return activityInfo.icon;
+            }).join(' ')} ({filters.nearbyActivities.length} activities)
+          </Text>
+          <TouchableOpacity 
+            onPress={() => setFilters(prev => ({ ...prev, nearbyActivities: [] }))}
+            style={styles.clearActivitiesButton}
+          >
+            <Text style={styles.clearActivitiesText}>Clear</Text>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* Search Location Indicator */}
       {currentSearchLocation && (
@@ -706,6 +737,34 @@ const styles = StyleSheet.create({
   },
   floatingLocationIcon: {
     fontSize: 24,
+  },
+  activitiesIndicator: {
+    position: 'absolute',
+    left: 20,
+    right: 20,
+    backgroundColor: '#FF6B35',
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  activitiesText: {
+    color: 'white',
+    fontSize: 14,
+    fontWeight: '600',
+    flex: 1,
+  },
+  clearActivitiesButton: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  clearActivitiesText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: '600',
   },
   searchLocationIndicator: {
     position: 'absolute',

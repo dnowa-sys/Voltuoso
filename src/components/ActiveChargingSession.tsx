@@ -1,12 +1,12 @@
 // src/components/ActiveChargingSession.tsx - REAL-TIME CHARGING MONITOR
 import React, { useEffect, useState } from 'react';
 import {
-    ActivityIndicator,
-    Alert,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ActivityIndicator,
+  Alert,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from 'react-native';
 
 interface ActiveChargingSessionProps {
@@ -29,57 +29,20 @@ export function ActiveChargingSession({ session, onSessionComplete }: ActiveChar
   const [isCharging, setIsCharging] = useState(true);
   const [stopping, setStopping] = useState(false);
 
-  // Simulate real-time charging progress
-  useEffect(() => {
-    if (!isCharging) return;
-
-    const interval = setInterval(() => {
-      setElapsedTime(prev => prev + 1);
-      
-      // Simulate power delivery curve (starts high, tapers off)
-      const timeInMinutes = elapsedTime / 60;
-      let power = 0;
-      
-      if (timeInMinutes < 10) {
-        power = 120 + Math.random() * 30; // High power initially
-      } else if (timeInMinutes < 30) {
-        power = 80 + Math.random() * 40; // Medium power
-      } else {
-        power = 20 + Math.random() * 30; // Lower power as battery fills
-      }
-      
-      setCurrentPower(power);
-      
-      // Update energy delivered (power * time)
-      setEnergyDelivered(prev => {
-        const newEnergy = prev + (power / 3600); // Convert to kWh per second
-        const newCost = newEnergy * session.pricePerKwh;
-        setCurrentCost(newCost);
-        return newEnergy;
-      });
-      
-      // Auto-complete after reasonable time (simulate full charge)
-      if (timeInMinutes > 45 && power < 25) {
-        setIsCharging(false);
-        setTimeout(() => {
-          handleSessionComplete();
-        }, 2000);
-      }
-    }, 1000); // Update every second
-
-    return () => clearInterval(interval);
-  }, [isCharging, elapsedTime, session.pricePerKwh]);
-
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
+  // Modify src/components/ActiveChargingSession.tsx
+useEffect(() => {
+  if (session.stationIp) {
+    const monitor = new ChargingSessionMonitor(session.id, session.stationIp);
     
-    if (hours > 0) {
-      return `${hours}h ${minutes.toString().padStart(2, '0')}m`;
-    }
-    return `${minutes}m ${secs.toString().padStart(2, '0')}s`;
-  };
+    monitor.startMonitoring((data) => {
+      setEnergyDelivered(data.energy);
+      setCurrentPower(data.power);
+      // Update other real-time data
+    });
+
+    return () => monitor.stopMonitoring();
+  }
+}, [session]);
 
   const getChargingSpeed = () => {
     if (currentPower > 100) return 'Fast';

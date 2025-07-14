@@ -67,37 +67,29 @@ export function ChargingSessionPayment({
     }
   };
 
-  const startChargingSessionMock = async () => {
-    setLoading(true);
-    try {
-      // Simulate payment authorization
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      const sessionData = {
-        sessionId: `session_mock_${Date.now()}`,
-        paymentIntentId: `pi_mock_${Date.now()}`,
-        customerId: customerId || 'mock_customer',
-        stationId,
-        authorizedAmount: estimatedCost,
-      };
+  // Modify src/components/ChargingSessionPayment.tsx
+const startChargingSessionReal = async () => {
+  setLoading(true);
+  try {
+    // Call Firebase Cloud Function
+    const startCharging = httpsCallable(functions, 'startChargingSession');
+    const result = await startCharging({
+      stationId: stationInfo.id,
+      paymentIntentId: clientSecret.split('_secret')[0],
+      chargeCurrent: 32 // Default charging current
+    });
 
-      Alert.alert(
-        'Payment Authorized! 💳',
-        `Your payment of $${estimatedCost.toFixed(2)} has been authorized. Starting charging session...`,
-        [
-          {
-            text: 'Start Charging',
-            onPress: () => onPaymentSuccess(sessionData),
-          },
-        ]
-      );
-    } catch (error) {
-      console.error('Mock charging session error:', error);
-      Alert.alert('Error', 'Failed to start charging session');
-    } finally {
-      setLoading(false);
-    }
-  };
+    onPaymentSuccess({
+      sessionId: result.data.sessionId,
+      paymentIntentId: clientSecret.split('_secret')[0]
+    });
+  } catch (error) {
+    console.error('Failed to start charging:', error);
+    Alert.alert('Error', 'Failed to start charging session');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const startChargingSessionReal = async () => {
     setLoading(true);
