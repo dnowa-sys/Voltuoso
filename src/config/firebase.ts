@@ -1,10 +1,9 @@
-// src/config/firebase.ts - FIXED ASYNCSTORAGE VERSION
+// src/config/firebase.ts
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getApp, getApps, initializeApp } from 'firebase/app';
-import { getAuth, getReactNativePersistence, initializeAuth } from 'firebase/auth';
+import { initializeApp } from 'firebase/app';
+import { getReactNativePersistence, initializeAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 
-// Firebase configuration
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,
   authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -15,34 +14,35 @@ const firebaseConfig = {
   databaseURL: process.env.EXPO_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
-// Initialize Firebase App (avoid duplicate initialization)
-let app;
-if (getApps().length === 0) {
-  app = initializeApp(firebaseConfig);
-} else {
-  app = getApp();
-}
+// Debug: Log config to verify environment variables are loading
+console.log('🔥 Firebase Config Debug:', {
+  apiKey: firebaseConfig.apiKey ? '✅ Set' : '❌ Missing',
+  authDomain: firebaseConfig.authDomain ? '✅ Set' : '❌ Missing',
+  projectId: firebaseConfig.projectId ? '✅ Set' : '❌ Missing',
+  storageBucket: firebaseConfig.storageBucket ? '✅ Set' : '❌ Missing',
+  messagingSenderId: firebaseConfig.messagingSenderId ? '✅ Set' : '❌ Missing',
+  appId: firebaseConfig.appId ? '✅ Set' : '❌ Missing',
+});
+
+// Log actual values (first few characters only for security)
+console.log('🔥 Firebase Config Values:', {
+  apiKey: firebaseConfig.apiKey?.substring(0, 10) + '...',
+  authDomain: firebaseConfig.authDomain,
+  projectId: firebaseConfig.projectId,
+});
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
 
 // Initialize Auth with AsyncStorage persistence
-let auth;
-try {
-  // First try to initialize with AsyncStorage persistence
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-  console.log('✅ Firebase Auth initialized with AsyncStorage persistence');
-} catch (error: any) {
-  // If that fails, try to get existing auth instance
-  try {
-    auth = getAuth(app);
-    console.log('✅ Using existing Firebase Auth instance');
-  } catch (secondError: any) {
-    console.error('❌ Firebase Auth initialization failed completely:', secondError);
-    throw secondError;
-  }
-}
+const auth = initializeAuth(app, {
+  persistence: getReactNativePersistence(AsyncStorage)
+});
+
+console.log('✅ Firebase Auth initialized with AsyncStorage persistence');
 
 // Initialize Firestore
 const db = getFirestore(app);
 
-export { app, auth, db };
+export { auth, db };
+export default app;

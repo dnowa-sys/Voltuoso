@@ -91,7 +91,7 @@ const startChargingSessionReal = async () => {
   }
 };
 
-  const startChargingSessionReal = async () => {
+  const startChargingSessionReal2 = async () => {
     setLoading(true);
     try {
       // Create payment intent for estimated amount
@@ -151,11 +151,20 @@ const startChargingSessionReal = async () => {
     }
   };
 
+const startChargingSessionMock = async () => {
+  console.log('🔄 Starting mock charging session...');
+  // Add your mock charging session logic here
+  return {
+    success: true,
+    sessionId: 'mock_session_' + Date.now(),
+  };
+};
+
   const startChargingSession = () => {
     if (shouldUseMockBackend()) {
       startChargingSessionMock();
     } else {
-      startChargingSessionReal();
+      startChargingSessionReal2();
     }
   };
 
